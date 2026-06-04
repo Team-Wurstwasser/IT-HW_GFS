@@ -24,13 +24,13 @@ const uint8_t gripperID = 5;
 
 String tableColor[8] = {
   "No color",
-  "No color", //Black
+  "Black",
   "Blue",
   "Green",
   "Yellow",
   "Red",
   "White",
-  "No color" //"Brown"
+  "Brown"
 };
 
 typedef struct struct_message {
