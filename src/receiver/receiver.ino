@@ -273,10 +273,49 @@ void setup() {
   esp_now_register_recv_cb(OnDataRecv);
 }
 
-void loop() {
-  int farbeID = holeSteinUndLeseFarbe();
-  moveToCoordinate(200.0, 360.0, 140, 295.0);
-  delay(2000);
-  openGripper();
+void gebeSteinAb(int id) {
+  int farbeID = id;
 
+  switch (farbeID) {
+    case 0: 
+      moveToCoordinate(0.0, 0.0, 0.0, 0.0);
+      delay(1200);
+      break;
+    case 1: 
+      moveToCoordinate(0.0, 0.0, 0.0, 0.0);
+      delay(1200);
+      break;
+    case 2: 
+      moveToCoordinate(0.0, 0.0, 0.0, 0.0);
+      delay(1200);
+      break;
+    case 3: 
+      moveToCoordinate(0.0, 0.0, 0.0, 0.0);
+      delay(1200);
+      break;
+    case 4: 
+      moveToCoordinate(0.0, 0.0, 0.0, 0.0);
+      delay(1200);
+      break;
+    case 5: 
+      moveToCoordinate(0.0, 0.0, 0.0, 0.0);
+      delay(1200);
+      break;
+    case 6: 
+      moveToCoordinate(0.0, 0.0, 0.0, 0.0);
+      delay(1200);
+      break;
+    case 7: 
+      moveToCoordinate(0.0, 0.0, 0.0, 0.0);
+      delay(1200);
+      break;
+  }
+
+  openGripper();
+}
+
+void loop() {
+  int farbID = holeSteinUndLeseFarbe();
+  gebeSteinAb(farbID);
+  delay(2000);
 }
