@@ -6,6 +6,11 @@
 const uint8_t S_RXD = 18;
 const uint8_t S_TXD = 19;
 
+// Speicher für die empfangenen Daten
+volatile uint8_t wertSpeicher[20] = {0};
+volatile uint8_t speicherIndex = 0;
+volatile unsigned long letzteStichprobeZeit = 0;
+
 SMS_STS st;
 
 const float LEN_A = 115.432, LEN_B = 41.0513, LEN_C = 168.8579, LEN_D = 127.9234, LEN_E = 108.5357, LEN_F = 7.7076, LEN_G = 90.0, LEN_H = -13.75;
@@ -37,8 +42,40 @@ struct_message eingehendeDaten;
 void OnDataRecv(const esp_now_recv_info *info, const uint8_t *incomingData, int len) {
   memcpy(&eingehendeDaten, incomingData, sizeof(eingehendeDaten));
   
-  Serial.print("Empfangene Farbe: ");
-  Serial.println(tableColor[eingehendeDaten.colorID]);
+  if (eingehendeDaten.colorID < 8) {
+    unsigned long jetzt = millis();
+    
+    if (jetzt - letzteStichprobeZeit >= 100) {
+      wertSpeicher[speicherIndex] = eingehendeDaten.colorID;
+      speicherIndex = (speicherIndex + 1) % 20; 
+      letzteStichprobeZeit = jetzt;
+    }
+  }
+}
+
+uint8_t holeGefilterteFarbe() {
+  uint32_t farbZaehler[8] = {0};
+  
+  uint8_t lokalerSpeicher[20];
+  for (uint8_t i = 0; i < 20; i++) {
+    lokalerSpeicher[i] = wertSpeicher[i];
+  }
+  
+  for (uint8_t i = 0; i < 20; i++) {
+    farbZaehler[lokalerSpeicher[i]]++;
+  }
+  
+  uint8_t haeufigsteFarbeID = 0;
+  uint32_t maximaleAnzahl = 0;
+  
+  for (uint8_t i = 0; i < 8; i++) {
+    if (farbZaehler[i] > maximaleAnzahl) {
+      maximaleAnzahl = farbZaehler[i];
+      haeufigsteFarbeID = i;
+    }
+  }
+  
+  return haeufigsteFarbeID;
 }
 
 void setTorque(bool enable) {
