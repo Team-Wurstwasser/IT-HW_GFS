@@ -122,20 +122,69 @@ void wigglePlaneIK(double LA, double aIn, double bIn) {
   InfoBuffer[9] = LB - LEN_B;
 }
 
-void EoAT_IK(float angleInput) {
-  float betaGenOut = (angleInput > 90) ? (LEN_G - (180 - angleInput)) : (angleInput < 90 ? -(90 - angleInput) : 0);
+void EoAT_IK(float angleInput){
+  float betaGenOut;
+  float betaRad;
+  float angleRad;
+  float aGenOut;
+  float bGenOut;
+
+  if(angleInput == 90){
+    betaGenOut = angleInput - LEN_G;
+    betaRad    = betaGenOut*M_PI/180;
+    angleRad   = angleInput*M_PI/180;
+    aGenOut = LEN_E;
+    bGenOut = LEN_F;
+  }
+  else if(angleInput < 90){
+    betaGenOut = 90 - angleInput;
+    betaRad    = betaGenOut*M_PI/180;
+    angleRad   = angleInput*M_PI/180;
+    aGenOut = cos(angleRad)*LEN_F + cos(betaRad)*LEN_E;
+    bGenOut = sin(angleRad)*LEN_F - sin(betaRad)*LEN_E;
+    betaGenOut = -betaGenOut;
+  }
+  else if(angleInput > 90){
+    betaGenOut = LEN_G - (180 - angleInput);
+    betaRad    = betaGenOut*M_PI/180;
+    angleRad   = angleInput*M_PI/180;
+    aGenOut = - cos(M_PI-angleRad)*LEN_F + cos(betaRad)*LEN_E;
+    bGenOut = sin(M_PI-angleRad)*LEN_F + sin(betaRad)*LEN_E;
+  }
   InfoBuffer[6] = betaGenOut;
-  InfoBuffer[7] = LEN_E;
-  InfoBuffer[8] = LEN_F;
+  InfoBuffer[7] = aGenOut;
+  InfoBuffer[8] = bGenOut;
 }
 
-void simpleLinkageIK(double LA, double LB, double aIn, double bIn) {
-  double L2C = aIn * aIn + bIn * bIn, LC = sqrt(L2C);
-  double psi = acos((LA * LA + L2C - LB * LB) / (2 * LA * LC)) * 180 / M_PI;
-  double omega = acos((LB * LB + L2C - LA * LA) / (2 * LC * LB)) * 180 / M_PI;
-  InfoBuffer[2] = 90 - atan(bIn / aIn) * 180 / M_PI - psi;
-  InfoBuffer[3] = psi + omega;
-  InfoBuffer[5] = 90 - InfoBuffer[2] - InfoBuffer[3];
+void simpleLinkageIK(double LA, double LB, double aIn, double bIn){
+  double psi;
+  double alpha;
+  double omega;
+  double beta;
+  double L2C;
+  double LC;
+  double lambda;
+  double delta;
+  if(bIn == 0){
+    psi   = acos((LA * LA + aIn * aIn - LB * LB)/(2 * LA * aIn)) * 180 / M_PI;
+    alpha = 90 - psi;
+    omega = acos((aIn * aIn + LB * LB - LA * LA)/(2 * aIn * LB)) * 180 / M_PI;
+    beta  = psi + omega;
+  }
+  else{
+    L2C = aIn * aIn + bIn * bIn;
+    LC  = sqrt(L2C);
+    lambda = atan(bIn/aIn) * 180 / M_PI;
+    psi    = acos((LA * LA + L2C - LB * LB)/(2 * LA * LC)) * 180 / M_PI;
+    alpha = 90 - lambda - psi;
+    omega = acos((LB * LB + L2C - LA * LA)/(2 * LC * LB)) * 180 / M_PI;
+    beta  = psi + omega;
+  }
+  delta = 90 - alpha - beta;
+
+  InfoBuffer[2]   = alpha;
+  InfoBuffer[3]   = beta;
+  InfoBuffer[5] = delta;
 }
 
 void ctrlIK(float x, float y, float z, float theta) {
@@ -240,7 +289,7 @@ uint8_t holeSteinUndLeseFarbe() {
   moveToCoordinate(20.0, 288.0, 100.0, 160.0);
   delay(1200);
 
-  moveToCoordinate(20.0, 288.0, -15.0, 160.0);
+  moveToCoordinate(20.0, 288.0, -30.0, 160.0);
   delay(4000); 
 
   uint8_t erkannteFarbeID = holeGefilterteFarbe();
@@ -253,14 +302,48 @@ uint8_t holeSteinUndLeseFarbe() {
   moveServo2(20.0, 288.0, 100.0, 160.0);
   delay(800);
 
-  moveToCoordinate(20.0, 360.0, 65.0, 295.0);
+  moveToCoordinate(20.0, 300.0, -55.0, 295.0);
   delay(800); 
   closeGripper();
 
-  moveServo2(20.0, 350.0, 140.0, 295.0);
-  delay(800);
+  moveServo2(20.0, 300.0, 100.0, 295.0);
+  delay(800); 
 
   return erkannteFarbeID;
+}
+
+void gebeSteinAb(int id) {
+  int farbeID = id;
+
+  switch (farbeID) {
+    case 0: 
+      moveToCoordinate(160.0, 240.0, 80.0, 295.0);
+      break;
+    case 1: 
+      moveToCoordinate(160.0, 240.0, 80.0, 295.0);
+      break;
+    case 2: 
+      moveToCoordinate(160.0, 240.0, 80.0, 295.0);
+      break;
+    case 3: 
+      moveToCoordinate(160.0, 240.0, 80.0, 295.0);
+      break;
+    case 4: 
+      moveToCoordinate(160.0, 240.0, 80.0, 295.0);
+      break;
+    case 5: 
+      moveToCoordinate(160.0, 240.0, 80.0, 295.0);
+      break;
+    case 6: 
+      moveToCoordinate(160.0, 240.0, 80.0, 295.0);
+      break;
+    case 7: 
+      moveToCoordinate(160.0, 240.0, 80.0, 295.0);
+      break;
+  }
+
+  delay(1200);
+  openGripper();
 }
 
 void setup() {
@@ -271,40 +354,6 @@ void setup() {
 
   esp_now_init();
   esp_now_register_recv_cb(OnDataRecv);
-}
-
-void gebeSteinAb(int id) {
-  int farbeID = id;
-
-  switch (farbeID) {
-    case 0: 
-      moveToCoordinate(200.0, 360.0, 140.0, 295.0);
-      break;
-    case 1: 
-      moveToCoordinate(200.0, 360.0, 140.0, 295.0);
-      break;
-    case 2: 
-      moveToCoordinate(200.0, 360.0, 140.0, 295.0);
-      break;
-    case 3: 
-      moveToCoordinate(200.0, 360.0, 140.0, 295.0);
-      break;
-    case 4: 
-      moveToCoordinate(200.0, 360.0, 140.0, 295.0);
-      break;
-    case 5: 
-      moveToCoordinate(200.0, 360.0, 140.0, 295.0);
-      break;
-    case 6: 
-      moveToCoordinate(200.0, 360.0, 140.0, 295.0);
-      break;
-    case 7: 
-      moveToCoordinate(200.0, 360.0, 140.0, 295.0);
-      break;
-  }
-
-  delay(1200);
-  openGripper();
 }
 
 void loop() {
