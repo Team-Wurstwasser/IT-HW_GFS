@@ -24,13 +24,13 @@ const uint8_t gripperID = 5;
 
 String tableColor[8] = {
   "No color",
-  "Black",
+  "No color", //Black
   "Blue",
   "Green",
   "Yellow",
   "Red",
   "White",
-  "Brown"
+  "No color" //"Brown"
 };
 
 typedef struct struct_message {
@@ -246,7 +246,7 @@ uint8_t holeSteinUndLeseFarbe() {
   uint8_t erkannteFarbeID = holeGefilterteFarbe();
 
   if (erkannteFarbeID < 8) {
-    Serial.print("Stein erkannt! Farbe: ");
+    Serial.print("Farbe: ");
     Serial.println(tableColor[erkannteFarbeID]);
   }
 
