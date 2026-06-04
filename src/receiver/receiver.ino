@@ -160,6 +160,12 @@ void moveToCoordinate(float x, float y, float z, float theta){
   ctrlMove();
 }
 
+void moveServo2(float x, float y, float z, float theta) {
+  ctrlIK(x, y, z, theta); 
+  int16_t zielPosServo2 = (int)(angleGenOut(STDirection[1] * InfoBuffer[2] + 15) * 3 + 0.5);
+  st.WritePosEx(STID[1], zielPosServo2, STSpd[1], STAc[1]);
+}
+
 void controlGripperRaw(int16_t targetPos, uint16_t speed) {
   st.WritePosEx(gripperID, targetPos, speed, 50); 
 }
@@ -230,6 +236,28 @@ void closeGripper(uint16_t speed = 2000) {
   }
 }
 
+uint8_t holeSteinUndLeseFarbe() {
+  moveToCoordinate(20.0, 288.0, 100.0, 160.0);
+  delay(1200);
+
+  moveToCoordinate(20.0, 288.0, -15.0, 160.0);
+  delay(4000); 
+
+  uint8_t erkannteFarbeID = holeGefilterteFarbe();
+
+  moveServo2(20.0, 288.0, 100.0, 160.0);
+  delay(800);
+
+  moveToCoordinate(20.0, 360.0, 65, 295.0);
+  delay(800); 
+  closeGripper();
+
+  moveServo2(20.0, 350.0, 140.0, 295.0);
+  delay(800);
+
+  return erkannteFarbeID;
+}
+
 void setup() {
   WiFi.mode(WIFI_STA);
   Serial1.begin(1000000, SERIAL_8N1, S_RXD, S_TXD);
@@ -240,10 +268,9 @@ void setup() {
 }
 
 void loop() {
-  moveToCoordinate(-286.0, 320.0, 148.0, 170.0);
-  delay(3000);
-  openGripper(2500); 
-  closeGripper(2500);
-  moveToCoordinate(-286.0, 320.0, 200.0, 350.0);
-  delay(3000);
+  int farbeID = holeSteinUndLeseFarbe();
+  moveToCoordinate(200.0, 360.0, 140, 295.0);
+  delay(2000);
+  openGripper();
+
 }
