@@ -245,6 +245,11 @@ uint8_t holeSteinUndLeseFarbe() {
 
   uint8_t erkannteFarbeID = holeGefilterteFarbe();
 
+  if (erkannteFarbeID < 8) {
+    Serial.print("Stein erkannt! Farbe: ");
+    Serial.println(tableColor[erkannteFarbeID]);
+  }
+
   moveServo2(20.0, 288.0, 100.0, 160.0);
   delay(800);
 
@@ -259,6 +264,7 @@ uint8_t holeSteinUndLeseFarbe() {
 }
 
 void setup() {
+  Serial.begin(115200);
   WiFi.mode(WIFI_STA);
   Serial1.begin(1000000, SERIAL_8N1, S_RXD, S_TXD);
   st.pSerial = &Serial1;
