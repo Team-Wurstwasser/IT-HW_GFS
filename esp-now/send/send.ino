@@ -85,7 +85,6 @@ int8_t sensorRead() {
 }
 
 void setup() {
-  Serial.begin(115200);
   sensorBegin();
   
   WiFi.mode(WIFI_STA);
