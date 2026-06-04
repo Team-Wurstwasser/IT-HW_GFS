@@ -253,7 +253,7 @@ uint8_t holeSteinUndLeseFarbe() {
   moveServo2(20.0, 288.0, 100.0, 160.0);
   delay(800);
 
-  moveToCoordinate(20.0, 360.0, 65, 295.0);
+  moveToCoordinate(20.0, 360.0, 65.0, 295.0);
   delay(800); 
   closeGripper();
 
@@ -278,39 +278,32 @@ void gebeSteinAb(int id) {
 
   switch (farbeID) {
     case 0: 
-      moveToCoordinate(0.0, 0.0, 0.0, 0.0);
-      delay(1200);
+      moveToCoordinate(200.0, 360.0, 140.0, 295.0);
       break;
     case 1: 
-      moveToCoordinate(0.0, 0.0, 0.0, 0.0);
-      delay(1200);
+      moveToCoordinate(200.0, 360.0, 140.0, 295.0);
       break;
     case 2: 
-      moveToCoordinate(0.0, 0.0, 0.0, 0.0);
-      delay(1200);
+      moveToCoordinate(200.0, 360.0, 140.0, 295.0);
       break;
     case 3: 
-      moveToCoordinate(0.0, 0.0, 0.0, 0.0);
-      delay(1200);
+      moveToCoordinate(200.0, 360.0, 140.0, 295.0);
       break;
     case 4: 
-      moveToCoordinate(0.0, 0.0, 0.0, 0.0);
-      delay(1200);
+      moveToCoordinate(200.0, 360.0, 140.0, 295.0);
       break;
     case 5: 
-      moveToCoordinate(0.0, 0.0, 0.0, 0.0);
-      delay(1200);
+      moveToCoordinate(200.0, 360.0, 140.0, 295.0);
       break;
     case 6: 
-      moveToCoordinate(0.0, 0.0, 0.0, 0.0);
-      delay(1200);
+      moveToCoordinate(200.0, 360.0, 140.0, 295.0);
       break;
     case 7: 
-      moveToCoordinate(0.0, 0.0, 0.0, 0.0);
-      delay(1200);
+      moveToCoordinate(200.0, 360.0, 140.0, 295.0);
       break;
   }
 
+  delay(1200);
   openGripper();
 }
 
