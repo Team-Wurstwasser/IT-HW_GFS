@@ -2,7 +2,7 @@
 #include <WiFi.h>
 
 // MAC-Adresse Empfänger
-uint8_t receiverAddress[] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF}; 
+uint8_t receiverAddress[] = {0x28, 0x05, 0xa5, 0x4f, 0xcf, 0xe0}; 
 
 typedef struct struct_message {
   uint8_t colorID;
