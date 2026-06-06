@@ -377,7 +377,7 @@ uint8_t holeSteinUndLeseFarbe() {
   moveToCoordinate(0.0, 330.0, 200.0, 130.0);
   delay(1200);
 
-  moveToCoordinate(0.0, 330.0, 83.0, 130.0);
+  moveToCoordinate(0.0, 330.0, 85.0, 130.0);
   delay(4000); 
 
   uint8_t erkannteFarbeID = holeGefilterteFarbe();
@@ -401,29 +401,23 @@ void gebeSteinAb(int id) {
   int farbeID = id;
 
   switch (farbeID) {
-    case 0: 
-      moveToCoordinate(160.0, 240.0, 200.0, 295.0);
-      break;
-    case 1: 
-      moveToCoordinate(160.0, 240.0, 200.0, 295.0);
-      break;
     case 2: 
-      moveToCoordinate(160.0, 240.0, 200.0, 295.0);
+      moveToCoordinate(-70.0, -315.0, 95.0, 250.0);
       break;
     case 3: 
-      moveToCoordinate(160.0, 240.0, 200.0, 295.0);
+      moveToCoordinate(25.0, -315.0, 95.0, 250.0);
       break;
     case 4: 
-      moveToCoordinate(160.0, 240.0, 200.0, 295.0);
+      moveToCoordinate(-70.0, -250.0, 95.0, 250.0);
       break;
     case 5: 
-      moveToCoordinate(160.0, 240.0, 200.0, 295.0);
+      moveToCoordinate(25.0, -250.0, 95.0, 250.0);
       break;
     case 6: 
-      moveToCoordinate(160.0, 240.0, 200.0, 295.0);
+      moveToCoordinate(250.0, 25.0, 95.0, 250.0);
       break;
-    case 7: 
-      moveToCoordinate(160.0, 240.0, 80.0, 295.0);
+    default:
+      moveToCoordinate(250.0, -70.0, 95.0, 250.0);
       break;
   }
 
