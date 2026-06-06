@@ -270,10 +270,10 @@ bool simpleLinkageIK(double LA, double LB, double aIn, double bIn){
 
 bool ctrlIK(float x, float y, float z, float theta) {
   theta = theta / 2.0;
-  bool nanEoAT_IK = wigglePlaneIK(LEN_H, x, y);
-  bool nanWiggleIK = EoAT_IK(theta);
-  bool nanSimleLIK = simpleLinkageIK(LEN_C, LEN_D, (InfoBuffer[len_totalXY]-InfoBuffer[len_a]), (z - LEN_A + InfoBuffer[len_b]));
-    if(nanSimleLIK || nanWiggleIK || nanEoAT_IK){
+  bool nanWiggleIK = wigglePlaneIK(LEN_H, x, y);
+  bool nanEoAT_IK = EoAT_IK(theta);
+  bool nanSimpleLIK = simpleLinkageIK(LEN_C, LEN_D, (InfoBuffer[len_totalXY]-InfoBuffer[len_a]), (z - LEN_A + InfoBuffer[len_b]));
+    if(nanSimpleLIK || nanWiggleIK || nanEoAT_IK){
     return true;
   }
   else{
