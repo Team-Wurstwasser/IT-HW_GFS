@@ -14,13 +14,18 @@ volatile unsigned long letzteStichprobeZeit = 0;
 SMS_STS st;
 
 const float LEN_A = 115.432, LEN_B = 41.0513, LEN_C = 168.8579, LEN_D = 127.9234, LEN_E = 108.5357, LEN_F = 7.7076, LEN_G = 90.0, LEN_H = -13.75;
-float InfoBuffer[10];
+const uint8_t angle_1 = 0, angle_2 = 1, angle_3 = 2, angle_4 = 3, angle_IKE = 4, angle_EoAT  = 5, len_a = 6, len_b = 7, len_totalXY = 8;
+
+float InfoBuffer[9];
 int16_t STPos[4];
 int STDirection[4] = {1, 1, 1, -1};
 uint16_t STSpd[4] = {3000, 3000, 3400, 3400};
 uint8_t STAc[4] = {50, 50, 50, 50};
 uint8_t STID[4] = {1, 2, 3, 4};
 const uint8_t gripperID = 5;
+
+const int torqueThreshold = 300;
+const int reverseRange = 4900;
 
 String tableColor[8] = {
   "No color",
@@ -87,7 +92,65 @@ void setTorque(bool enable) {
 
 float angleGenOut(float angleInput) { return angleInput * 4096.0 / 360.0; }
 
-void wigglePlaneIK(double LA, double aIn, double bIn) {
+void setMode(uint8_t id, uint8_t mode) {
+  if (mode == 0) {
+    st.unLockEprom(id);
+    st.writeWord(id, 11, 4095);
+    st.writeByte(id, SMS_STS_MODE, mode);
+    st.LockEprom(id);
+  } else if (mode == 3) {
+    st.unLockEprom(id);
+    st.writeByte(id, SMS_STS_MODE, mode);
+    st.writeWord(id, 11, 0);
+    st.LockEprom(id);
+  }
+}
+
+void setMiddle(uint8_t id) {
+  st.CalibrationOfs(id);
+}
+
+void servoStop(uint8_t id) {
+  st.EnableTorque(id, 0);
+  delay(10);
+  st.EnableTorque(id, 1);
+}
+
+int16_t readServoLoad(uint8_t id) {
+  if (st.FeedBack(id) != -1) {
+    return st.ReadLoad(-1);
+  }
+  return 0;
+}
+
+void s2AutoConfig() {
+  st.WritePosEx(1, (int)(angleGenOut(180) + 0.5), 100, 150);
+  st.WritePosEx(3, (int)(angleGenOut(270) + 0.5), 100, 150);
+  st.WritePosEx(4, (int)(angleGenOut(90) + 0.5), 100, 150);
+  st.WritePosEx(5, (int)(angleGenOut(180) + 0.5), 100, 150);
+  delay(8000);
+  
+  setMode(2, 3);
+  
+  st.WritePosEx(2, -20000, 500, 50);
+  delay(1000);
+  
+  while (true) {
+    int16_t currentLoad = readServoLoad(2);
+    
+    if (currentLoad > torqueThreshold) {
+      servoStop(2);
+      st.WritePosEx(2, reverseRange, 1500, 150);
+      delay(11000);
+      setMiddle(2);
+      setMode(2, 0);
+      break;
+    }
+    delay(50);
+  }
+}
+
+bool wigglePlaneIK(double LA, double aIn, double bIn) {
   double LB;
   double L2C;
   double LC;
@@ -118,11 +181,17 @@ void wigglePlaneIK(double LA, double aIn, double bIn) {
     LB = sqrt(L2C - LA * LA);
     alpha = 90 - lambda + psi;
   }
-  InfoBuffer[1] = alpha + 90;
-  InfoBuffer[9] = LB - LEN_B;
+  if(!isnan(alpha)){
+    InfoBuffer[angle_1] = alpha + 90;
+    InfoBuffer[len_totalXY] = LB - LEN_B;
+    return false;
+  }
+  else{
+    return true;
+  }
 }
 
-void EoAT_IK(float angleInput){
+bool EoAT_IK(float angleInput){
   float betaGenOut;
   float betaRad;
   float angleRad;
@@ -151,12 +220,18 @@ void EoAT_IK(float angleInput){
     aGenOut = - cos(M_PI-angleRad)*LEN_F + cos(betaRad)*LEN_E;
     bGenOut = sin(M_PI-angleRad)*LEN_F + sin(betaRad)*LEN_E;
   }
-  InfoBuffer[6] = betaGenOut;
-  InfoBuffer[7] = aGenOut;
-  InfoBuffer[8] = bGenOut;
+  if(!isnan(betaGenOut) || !isnan(aGenOut) || !isnan(bGenOut)){
+    InfoBuffer[angle_EoAT] = betaGenOut;
+    InfoBuffer[len_a] = aGenOut;
+    InfoBuffer[len_b] = bGenOut;
+    return false;
+  }
+  else{
+    return true;
+  }
 }
 
-void simpleLinkageIK(double LA, double LB, double aIn, double bIn){
+bool simpleLinkageIK(double LA, double LB, double aIn, double bIn){
   double psi;
   double alpha;
   double omega;
@@ -182,37 +257,50 @@ void simpleLinkageIK(double LA, double LB, double aIn, double bIn){
   }
   delta = 90 - alpha - beta;
 
-  InfoBuffer[2]   = alpha;
-  InfoBuffer[3]   = beta;
-  InfoBuffer[5] = delta;
+  if(!isnan(alpha) && !isnan(beta) && !isnan(delta)){
+    InfoBuffer[angle_2]   = alpha;
+    InfoBuffer[angle_3]   = beta;
+    InfoBuffer[angle_IKE] = delta;
+    return false;
+  }
+  else{
+    return true;
+  }
 }
 
-void ctrlIK(float x, float y, float z, float theta) {
+bool ctrlIK(float x, float y, float z, float theta) {
   theta = theta / 2.0;
-  wigglePlaneIK(LEN_H, x, y);
-  EoAT_IK(theta);
-  simpleLinkageIK(LEN_C, LEN_D, (InfoBuffer[9] - InfoBuffer[7]), (z - LEN_A + InfoBuffer[8]));
-  InfoBuffer[4] = InfoBuffer[5] + InfoBuffer[6];
+  bool nanEoAT_IK = wigglePlaneIK(LEN_H, x, y);
+  bool nanWiggleIK = EoAT_IK(theta);
+  bool nanSimleLIK = simpleLinkageIK(LEN_C, LEN_D, (InfoBuffer[len_totalXY]-InfoBuffer[len_a]), (z - LEN_A + InfoBuffer[len_b]));
+    if(nanSimleLIK || nanWiggleIK || nanEoAT_IK){
+    return true;
+  }
+  else{
+    InfoBuffer[angle_4] = InfoBuffer[angle_IKE] + InfoBuffer[angle_EoAT];
+    return false;
+  }
 }
 
 void ctrlMove() {
-  STPos[0] = (int)(angleGenOut(STDirection[0] * InfoBuffer[1]) + 0.5);
-  STPos[1] = (int)(angleGenOut(STDirection[1] * InfoBuffer[2] + 15) * 3 + 0.5);
-  STPos[2] = (int)(angleGenOut(STDirection[2] * InfoBuffer[3] + 180) + 0.5);
-  STPos[3] = (int)(angleGenOut(STDirection[3] * InfoBuffer[4] + 180) + 0.5);
+  STPos[0] = (int)(angleGenOut(STDirection[0]*InfoBuffer[angle_1]) + 0.5);
+  STPos[1] = (int)(angleGenOut(STDirection[1]*InfoBuffer[angle_2]+15)*3 + 0.5);
+  STPos[2] = (int)(angleGenOut(STDirection[2]*InfoBuffer[angle_3]+180)  + 0.5);
+  STPos[3] = (int)(angleGenOut(STDirection[3]*InfoBuffer[angle_4]+180)  + 0.5);
   
   st.SyncWritePosEx(STID, 4, STPos, STSpd, STAc);
 }
 
 void moveToCoordinate(float x, float y, float z, float theta){
-  ctrlIK(x, y, z, theta);
-  ctrlMove();
-}
-
-void moveServo2(float x, float y, float z, float theta) {
-  ctrlIK(x, y, z, theta); 
-  int16_t zielPosServo2 = (int)(angleGenOut(STDirection[1] * InfoBuffer[2] + 15) * 3 + 0.5);
-  st.WritePosEx(STID[1], zielPosServo2, STSpd[1], STAc[1]);
+  bool nanCtrlIK = ctrlIK(x, y, z, theta);
+  if (!nanCtrlIK)
+  {
+    ctrlMove();
+  }
+  else
+  {
+    Serial.printf("FEHLER: Zielkoordinaten nicht erreichbar! X:%.2f, Y:%.2f, Z:%.2f\n", x, y, z);
+  }
 }
 
 void controlGripperRaw(int16_t targetPos, uint16_t speed) {
@@ -286,10 +374,10 @@ void closeGripper(uint16_t speed = 2000) {
 }
 
 uint8_t holeSteinUndLeseFarbe() {
-  moveToCoordinate(20.0, 288.0, 100.0, 160.0);
+  moveToCoordinate(0.0, 330.0, 200.0, 130.0);
   delay(1200);
 
-  moveToCoordinate(20.0, 288.0, -30.0, 160.0);
+  moveToCoordinate(0.0, 330.0, 83.0, 130.0);
   delay(4000); 
 
   uint8_t erkannteFarbeID = holeGefilterteFarbe();
@@ -299,14 +387,11 @@ uint8_t holeSteinUndLeseFarbe() {
     Serial.println(tableColor[erkannteFarbeID]);
   }
 
-  moveServo2(20.0, 288.0, 100.0, 160.0);
-  delay(800);
-
-  moveToCoordinate(20.0, 300.0, -55.0, 295.0);
+  moveToCoordinate(0.0, 351.0, 70.0, 250.0);
   delay(800); 
   closeGripper();
 
-  moveServo2(20.0, 300.0, 100.0, 295.0);
+  moveToCoordinate(0.0, 351.0, 200.0, 250.0);
   delay(800); 
 
   return erkannteFarbeID;
@@ -317,25 +402,25 @@ void gebeSteinAb(int id) {
 
   switch (farbeID) {
     case 0: 
-      moveToCoordinate(160.0, 240.0, 80.0, 295.0);
+      moveToCoordinate(160.0, 240.0, 200.0, 295.0);
       break;
     case 1: 
-      moveToCoordinate(160.0, 240.0, 80.0, 295.0);
+      moveToCoordinate(160.0, 240.0, 200.0, 295.0);
       break;
     case 2: 
-      moveToCoordinate(160.0, 240.0, 80.0, 295.0);
+      moveToCoordinate(160.0, 240.0, 200.0, 295.0);
       break;
     case 3: 
-      moveToCoordinate(160.0, 240.0, 80.0, 295.0);
+      moveToCoordinate(160.0, 240.0, 200.0, 295.0);
       break;
     case 4: 
-      moveToCoordinate(160.0, 240.0, 80.0, 295.0);
+      moveToCoordinate(160.0, 240.0, 200.0, 295.0);
       break;
     case 5: 
-      moveToCoordinate(160.0, 240.0, 80.0, 295.0);
+      moveToCoordinate(160.0, 240.0, 200.0, 295.0);
       break;
     case 6: 
-      moveToCoordinate(160.0, 240.0, 80.0, 295.0);
+      moveToCoordinate(160.0, 240.0, 200.0, 295.0);
       break;
     case 7: 
       moveToCoordinate(160.0, 240.0, 80.0, 295.0);
@@ -346,6 +431,19 @@ void gebeSteinAb(int id) {
   openGripper();
 }
 
+void initArmPosition() {
+  float startX = LEN_B + LEN_D + LEN_E;
+  float startY = LEN_H;
+  float startZ = LEN_A + LEN_C - LEN_F;
+  float startTheta = 180.0;
+
+  STSpd[0] = 1000; STSpd[1] = 1000; STSpd[2] = 1000; STSpd[3] = 1000;
+  moveToCoordinate(startX, startY, startZ, startTheta); 
+  delay(2000); 
+  STSpd[0] = 3000; STSpd[1] = 3000; STSpd[2] = 3400; STSpd[3] = 3400;
+  openGripper(1500);
+}
+
 void setup() {
   Serial.begin(115200);
   WiFi.mode(WIFI_STA);
@@ -354,6 +452,9 @@ void setup() {
 
   esp_now_init();
   esp_now_register_recv_cb(OnDataRecv);
+
+  s2AutoConfig();
+  initArmPosition();
 }
 
 void loop() {
