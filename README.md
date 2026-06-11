@@ -67,3 +67,29 @@ Stelle sicher, dass folgende Bibliotheken in der Arduino IDE installiert sind:
 Bevor du den Code hochlädst, musst du die MAC-Adresse des Empfängers auslesen und im **Sender-Code** eintragen:
 ```cpp
 uint8_t receiverAddress[] = {0x28, 0x05, 0xa5, 0x4f, 0xcf, 0xe0};
+
+## 🔌 3. Pinbelegung
+
+Die Hardware-Komponenten werden an die jeweiligen Pins der beiden ESP32-Controller wie folgt angeschlossen:
+
+### 📡 Sender (Farbsensor-Modul)
+* **Pin 26 (EV3_RX_PIN):** Verbunden mit dem TX-Pin des LEGO Mindstorms EV3 Farbsensors.
+* **Pin 27 (EV3_TX_PIN):** Verbunden mit dem RX-Pin des LEGO Mindstorms EV3 Farbsensors.
+
+### 🤖 Empfänger (Roboterarm-Steuerung)
+* **Pin 18 (S_RXD):** Empfangsleitung für das Feetech/SCServo Bussystem (RXD).
+* **Pin 19 (S_TXD):** Sendeleitung für das Feetech/SCServo Bussystem (TXD).
+* *Hinweis: Da es sich um ein Halbduplex-Eindraht-Bussystem handelt, wird hier typischerweise eine entsprechende Treiberschaltung oder ein Signal-Inverter verwendet.*
+'''
+---
+
+## 🔄 4. Programmablauf (Loop)
+
+Der automatische Hauptablauf (`loop()`) des Roboterarms folgt einer festen zyklischen Logik:
+
+1. **Scan-Position anfahren:** Der Roboterarm bewegt sich zuerst auf eine sichere Warteposition direkt über dem Objekt (`X: 0.0, Y: 330.0, Z: 200.0, θ: 130.0`).
+2. **Sensor absenken:** Der Arm senkt sich ab (`Z: 85.0`), um den EV3-Farbsensor nah genug an das Objekt heranzuführen. Hier verweilt er für 4 Sekunden, damit genügend Messwerte einfließen können.
+3. **Filterung & Erkennung:** Der ESP32 liest die via ESP-NOW empfangenen Farb-IDs aus einem Ringpuffer aus. Die Funktion `holeGefilterteFarbe()` ermittelt den statistisch häufigsten Wert der letzten 20 Stichproben, um Signalrauschen zu eliminieren.
+4. **Zupacken:** Der Arm wechselt auf die Greifkoordinate (`Z: 70.0`, leicht versetzt auf `Y: 351.0`). Die Funktion `closeGripper()` schließt den Greifer, bis ein mechanischer Widerstand (Blockade-Erkennung über Positionsabweichung) registriert wird.
+5. **Anheben & Sortieren:** Das Objekt wird angehoben (`Z: 200.0`). Basierend auf der gefilterten `farbeID` wird über eine `switch-case`-Abfrage (`gebeSteinAb()`) die spezifische Zielbox-Koordinate angefahren.
+6. **Abladen & Reset:** Am Zielort öffnet sich der Greifer (`openGripper()`). Der Arm verbleibt dort für 1,2 Sekunden, fährt dann zurück in die Ausgangsposition und wartet 2 Sekunden, bevor der nächste Sortierzyklus beginnt.
