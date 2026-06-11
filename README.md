@@ -67,6 +67,7 @@ Stelle sicher, dass folgende Bibliotheken in der Arduino IDE installiert sind:
 Bevor du den Code hochlädst, musst du die MAC-Adresse des Empfängers auslesen und im **Sender-Code** eintragen:
 ```cpp
 uint8_t receiverAddress[] = {0x28, 0x05, 0xa5, 0x4f, 0xcf, 0xe0};
+```
 
 ## 🔌 3. Pinbelegung
 
@@ -80,7 +81,6 @@ Die Hardware-Komponenten werden an die jeweiligen Pins der beiden ESP32-Controll
 * **Pin 18 (S_RXD):** Empfangsleitung für das Feetech/SCServo Bussystem (RXD).
 * **Pin 19 (S_TXD):** Sendeleitung für das Feetech/SCServo Bussystem (TXD).
 * *Hinweis: Da es sich um ein Halbduplex-Eindraht-Bussystem handelt, wird hier typischerweise eine entsprechende Treiberschaltung oder ein Signal-Inverter verwendet.*
-'''
 ---
 
 ## 🔄 4. Programmablauf (Loop)
