@@ -94,5 +94,5 @@ Der automatische Hauptablauf (`loop()`) des Roboterarms folgt einer festen zykli
 5. **Anheben & Sortieren:** Das Objekt wird angehoben (`Z: 200.0`). Basierend auf der gefilterten `farbeID` wird über eine `switch-case`-Abfrage (`gebeSteinAb()`) die spezifische Zielbox-Koordinate angefahren.
 6. **Abladen & Reset:** Am Zielort öffnet sich der Greifer (`openGripper()`). Der Arm verbleibt dort für 1,2 Sekunden, fährt dann zurück in die Ausgangsposition und wartet 2 Sekunden, bevor der nächste Sortierzyklus beginnt.
 
-
+<br><br>
 diese README wurde KI generiert
