@@ -8,7 +8,7 @@ typedef struct struct_message {
   uint8_t colorID;
 } struct_message;
 
-struct_message daten;
+struct_message data;
 esp_now_peer_info_t peerInfo;
 
 const uint8_t EV3_RX_PIN = 26;
@@ -101,6 +101,6 @@ void setup() {
 void loop() {
   uint8_t color = sensorRead();
   daten.colorID = color;
-  esp_now_send(receiverAddress, (uint8_t *) &daten, sizeof(daten));
+  esp_now_send(receiverAddress, (uint8_t *) &data, sizeof(data));
   delay(200);
 }
