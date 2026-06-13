@@ -19,7 +19,7 @@ const uint8_t angle_1 = 0, angle_2 = 1, angle_3 = 2, angle_4 = 3, angle_IKE = 4,
 float InfoBuffer[9];
 int16_t STPos[4];
 int STDirection[4] = {1, 1, 1, -1};
-uint16_t STSpd[4] = {3000, 3000, 3400, 3400};
+uint16_t STSpd[4];
 uint8_t STAc[4] = {50, 50, 50, 50};
 uint8_t STID[4] = {1, 2, 3, 4};
 const uint8_t gripperID = 5;
@@ -133,7 +133,6 @@ void s2AutoConfig() {
   setMode(2, 3);
   
   st.WritePosEx(2, -20000, 500, 50);
-  delay(1000);
   
   while (true) {
     int16_t currentLoad = readServoLoad(2);
@@ -276,9 +275,9 @@ bool ctrlIK(double x, double y, double z, double theta) {
 
 void ctrlMove() {
   STPos[0] = (int)(angleGenOut(STDirection[0] * InfoBuffer[angle_1]) + 0.5);
-  STPos[1] = (int)(angleGenOut(STDirection[1] * InfoBuffer[angle_2]+15) * 3 + 0.5);
-  STPos[2] = (int)(angleGenOut(STDirection[2] * InfoBuffer[angle_3]+180) + 0.5);
-  STPos[3] = (int)(angleGenOut(STDirection[3] * InfoBuffer[angle_4]+180) + 0.5);
+  STPos[1] = (int)(angleGenOut(STDirection[1] * InfoBuffer[angle_2] + 15) * 3 + 0.5);
+  STPos[2] = (int)(angleGenOut(STDirection[2] * InfoBuffer[angle_3] + 180) + 0.5);
+  STPos[3] = (int)(angleGenOut(STDirection[3] * InfoBuffer[angle_4] + 180) + 0.5);
   
   st.SyncWritePosEx(STID, 4, STPos, STSpd, STAc);
 }
@@ -288,6 +287,38 @@ void moveToCoordinate(double x, double y, double z, double theta){
   if (!nanCtrlIK)
   {
     ctrlMove();
+    
+    bool alleAmZiel = false;
+    
+    while (!alleAmZiel) {
+      bool signalVerloren = false;
+      
+      for (uint8_t i = 0; i < 4; i++) {
+        int16_t aktuellePos = st.ReadPos(STID[i]);
+        
+        if (aktuellePos == -1) {
+          signalVerloren = true;
+          alleAmZiel = false;
+          break; 
+        }
+        
+        if (abs(aktuellePos - STPos[i]) > 25) {
+          alleAmZiel = false;
+        }
+        else {
+          alleAmZiel = true;
+        }
+      }
+      
+      if (signalVerloren) {
+        Serial.println("WARNUNG: Signal verloren oder Servo offline! Befehl wird neu gesendet...");
+        ctrlMove();
+        delay(40);
+      }
+      else if (!alleAmZiel) {
+        delay(50); 
+      }
+    }
   }
   else
   {
@@ -367,9 +398,8 @@ void closeGripper(uint16_t speed = 2000) {
 
 uint8_t holeSteinUndLeseFarbe() {
   moveToCoordinate(0.0, 330.0, 200.0, 130.0);
-  delay(1200);
-
   moveToCoordinate(0.0, 330.0, 80.0, 130.0);
+
   delay(4000); 
 
   uint8_t erkannteFarbeID = holeGefilterteFarbe();
@@ -380,11 +410,9 @@ uint8_t holeSteinUndLeseFarbe() {
   }
 
   moveToCoordinate(0.0, 351.0, 65.0, 250.0);
-  delay(800); 
   closeGripper();
 
   moveToCoordinate(0.0, 351.0, 200.0, 250.0);
-  delay(800); 
 
   return erkannteFarbeID;
 }
@@ -413,7 +441,6 @@ void gebeSteinAb(int id) {
       break;
   }
 
-  delay(1200);
   openGripper();
 }
 
@@ -424,8 +451,8 @@ void initArmPosition() {
   float startTheta = 180.0;
 
   STSpd[0] = 1000; STSpd[1] = 1000; STSpd[2] = 1000; STSpd[3] = 1000;
-  moveToCoordinate(startX, startY, startZ, startTheta); 
-  delay(2000); 
+  moveToCoordinate(startX, startY, startZ, startTheta);
+
   STSpd[0] = 3000; STSpd[1] = 3000; STSpd[2] = 3400; STSpd[3] = 3400;
   openGripper(1500);
 }
@@ -446,5 +473,4 @@ void setup() {
 void loop() {
   int farbID = holeSteinUndLeseFarbe();
   gebeSteinAb(farbID);
-  delay(2000);
 }
