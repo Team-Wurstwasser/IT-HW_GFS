@@ -22,6 +22,7 @@ int STDirection[4] = {1, 1, 1, -1};
 uint16_t STSpd[4];
 uint8_t STAc[4] = {50, 50, 50, 50};
 uint8_t STID[4] = {1, 2, 3, 4};
+const uint8_t STID_count = 4;
 const uint8_t gripperID = 5;
 
 const int torqueThreshold = 300;
@@ -81,13 +82,6 @@ uint8_t holeGefilterteFarbe() {
   }
   
   return haeufigsteFarbeID;
-}
-
-void setTorque(bool enable) {
-  uint8_t cmd = enable ? 1 : 0;
-  for(uint8_t id = 1; id <= 5; ++id) {
-    st.EnableTorque(id, cmd);
-  }
 }
 
 float angleGenOut(float angleInput) { return angleInput * 4096.0 / 360.0; }
@@ -279,7 +273,7 @@ void ctrlMove() {
   STPos[2] = (int)(angleGenOut(STDirection[2] * InfoBuffer[angle_3] + 180) + 0.5);
   STPos[3] = (int)(angleGenOut(STDirection[3] * InfoBuffer[angle_4] + 180) + 0.5);
   
-  st.SyncWritePosEx(STID, 4, STPos, STSpd, STAc);
+  st.SyncWritePosEx(STID, STID_count, STPos, STSpd, STAc);
 }
 
 void moveToCoordinate(double x, double y, double z, double theta){
@@ -294,7 +288,7 @@ void moveToCoordinate(double x, double y, double z, double theta){
       bool signalVerloren = false;
       alleAmZiel = true;
       
-      for (uint8_t i = 0; i < 4; i++) {
+      for (uint8_t i = 0; i < STID_count; i++) {
         int16_t aktuellePos = st.ReadPos(STID[i]);
         
         if (aktuellePos == -1) {
