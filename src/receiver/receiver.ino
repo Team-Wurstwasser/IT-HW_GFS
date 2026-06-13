@@ -413,7 +413,7 @@ void closeGripper(uint16_t speed = 2000) {
 
 uint8_t holeSteinUndLeseFarbe() {
   moveToCoordinate(0.0, 330.0, 200.0, 130.0);
-  moveToCoordinate(0.0, 330.0, 80.0, 130.0);
+  moveToCoordinate(0.0, 330.0, 85.0, 130.0);
 
   starteEspNow();
   delay(4000); 
@@ -426,7 +426,7 @@ uint8_t holeSteinUndLeseFarbe() {
     Serial.println(tableColor[erkannteFarbeID]);
   }
 
-  moveToCoordinate(0.0, 351.0, 65.0, 250.0);
+  moveToCoordinate(0.0, 351.0, 70.0, 250.0);
   closeGripper();
 
   moveToCoordinate(0.0, 351.0, 200.0, 250.0);
@@ -439,22 +439,22 @@ void gebeSteinAb(int id) {
 
   switch (farbeID) {
     case 2: 
-      moveToCoordinate(-70.0, -315.0, 90.0, 250.0);
+      moveToCoordinate(-70.0, -315.0, 95.0, 250.0);
       break;
     case 3: 
-      moveToCoordinate(25.0, -315.0, 90.0, 250.0);
+      moveToCoordinate(25.0, -315.0, 95.0, 250.0);
       break;
     case 4: 
-      moveToCoordinate(-70.0, -250.0, 90.0, 250.0);
+      moveToCoordinate(-70.0, -250.0, 95.0, 250.0);
       break;
     case 5: 
-      moveToCoordinate(25.0, -250.0, 90.0, 250.0);
+      moveToCoordinate(25.0, -250.0, 95.0, 250.0);
       break;
     case 6: 
-      moveToCoordinate(250.0, 25.0, 90.0, 250.0);
+      moveToCoordinate(250.0, 25.0, 95.0, 250.0);
       break;
     default:
-      moveToCoordinate(250.0, -70.0, 90.0, 250.0);
+      moveToCoordinate(250.0, -70.0, 95.0, 250.0);
       break;
   }
 
