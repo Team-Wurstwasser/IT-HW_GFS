@@ -74,6 +74,8 @@ uint8_t receiverAddress[] = {0x28, 0x05, 0xa5, 0x4f, 0xcf, 0xe0};
 Die Hardware-Komponenten werden an die jeweiligen Pins der beiden ESP32-Controller wie folgt angeschlossen:
 
 ### 📡 Sender (Farbsensor-Modul)
+<img width="170" height="241" alt="pin_sensor_connection" src="https://github.com/user-attachments/assets/a197ee79-b29b-477e-a35c-ff98eb3c46e3" />
+
 * **Pin 26 (EV3_RX_PIN):** Verbunden mit dem TX-Pin des LEGO Mindstorms EV3 Farbsensors.
 * **Pin 27 (EV3_TX_PIN):** Verbunden mit dem RX-Pin des LEGO Mindstorms EV3 Farbsensors.
 
