@@ -6,8 +6,10 @@
 const uint8_t S_RXD = 18;
 const uint8_t S_TXD = 19;
 
+volatile bool espNowGesperrt = false;
+
 // Speicher für die empfangenen Daten
-volatile uint8_t wertSpeicher[20] = {0};
+volatile uint8_t wertSpeicher[20];
 volatile uint8_t speicherIndex = 0;
 volatile unsigned long letzteStichprobeZeit = 0;
 
@@ -46,6 +48,8 @@ typedef struct struct_message {
 struct_message eingehendeDaten;
 
 void OnDataRecv(const esp_now_recv_info *info, const uint8_t *incomingData, int len) {
+  if (espNowGesperrt) return; 
+
   memcpy(&eingehendeDaten, incomingData, sizeof(eingehendeDaten));
   
   if (eingehendeDaten.colorID < 8) {
@@ -60,16 +64,13 @@ void OnDataRecv(const esp_now_recv_info *info, const uint8_t *incomingData, int 
 }
 
 uint8_t holeGefilterteFarbe() {
-  uint32_t farbZaehler[8] = {0};
+  uint32_t farbZaehler[8];
   
-  uint8_t lokalerSpeicher[20];
+  espNowGesperrt = true; 
   for (uint8_t i = 0; i < 20; i++) {
-    lokalerSpeicher[i] = wertSpeicher[i];
+    farbZaehler[wertSpeicher[i]]++;
   }
-  
-  for (uint8_t i = 0; i < 20; i++) {
-    farbZaehler[lokalerSpeicher[i]]++;
-  }
+  espNowGesperrt = false; 
   
   uint8_t haeufigsteFarbeID = 0;
   uint32_t maximaleAnzahl = 0;
