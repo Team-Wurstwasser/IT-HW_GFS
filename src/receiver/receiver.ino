@@ -292,6 +292,7 @@ void moveToCoordinate(double x, double y, double z, double theta){
     
     while (!alleAmZiel) {
       bool signalVerloren = false;
+      alleAmZiel = true;
       
       for (uint8_t i = 0; i < 4; i++) {
         int16_t aktuellePos = st.ReadPos(STID[i]);
@@ -304,9 +305,6 @@ void moveToCoordinate(double x, double y, double z, double theta){
         
         if (abs(aktuellePos - STPos[i]) > 25) {
           alleAmZiel = false;
-        }
-        else {
-          alleAmZiel = true;
         }
       }
       
@@ -334,29 +332,33 @@ void openGripper(uint16_t speed = 2000) {
   int16_t targetPos = 1300;
   
   controlGripperRaw(targetPos, speed);
+  delay(20);
   
-  int16_t lastPos = st.ReadPos(gripperID);
-  uint32_t startTime = millis();
+  int16_t lastPos = -1;
   uint32_t lastCheckTime = millis();
+  uint8_t errorCounter = 0;
+  bool AmZiel = false;
   
-  while (millis() - startTime < 3000) {
+  while (!AmZiel) {
     delay(30);
     
     int16_t currentPos = st.ReadPos(gripperID);
-    if (currentPos == -1) continue;
+    
+    if (currentPos == -1) {
+      Serial.println("WARNUNG: Greifer-Signal verloren oder Greifer-Servo offline! Befehl wird neu gesendet...");
+      controlGripperRaw(targetPos, speed);
+      continue;
+    }
 
     if (abs(currentPos - targetPos) < 15) {
+      AmZiel = true;
       break; 
     }
     
     if (millis() - lastCheckTime > 150) {
-      if (abs(currentPos - lastPos) < 8) { 
+      if (lastPos != -1 && abs(currentPos - lastPos) < 8) { 
         st.WritePosEx(gripperID, currentPos, 1000, 50);
-        delay(50);
-        st.EnableTorque(gripperID, 0); 
-        delay(50);
-        st.EnableTorque(gripperID, 1);
-        delay(50);
+        AmZiel = true;
         break; 
       }
       lastPos = currentPos;
@@ -369,25 +371,33 @@ void closeGripper(uint16_t speed = 2000) {
   int16_t targetPos = 2300;
   
   controlGripperRaw(targetPos, speed);
+  delay(20);
   
-  int16_t lastPos = st.ReadPos(gripperID);
-  uint32_t startTime = millis();
+  int16_t lastPos = -1; 
   uint32_t lastCheckTime = millis();
+  bool AmZiel = false;
   
-  while (millis() - startTime < 3000) {
+  while (!AmZiel) {
     delay(30);
     
     int16_t currentPos = st.ReadPos(gripperID);
-    if (currentPos == -1) continue;
+    
+    if (currentPos == -1) {
+      Serial.println("WARNUNG: Greifer-Signal verloren oder Greifer-Servo! Befehl wird neu gesendet...");
+      controlGripperRaw(targetPos, speed);
+      continue;
+    }
 
     if (abs(currentPos - targetPos) < 15) {
+      AmZiel = true;
       break; 
     }
     
     if (millis() - lastCheckTime > 150) {
-      if (abs(currentPos - lastPos) < 8) { 
+      if (lastPos != -1 && abs(currentPos - lastPos) < 8) { 
         st.WritePosEx(gripperID, currentPos, 1000, 50);
         delay(150);
+        AmZiel = true;
         break; 
       }
       lastPos = currentPos;
