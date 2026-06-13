@@ -131,11 +131,49 @@ int16_t readServoLoad(uint8_t id) {
 }
 
 void s2AutoConfig() {
-  st.WritePosEx(1, (int)(angleGenOut(180) + 0.5), 100, 150);
-  st.WritePosEx(3, (int)(angleGenOut(270) + 0.5), 100, 150);
-  st.WritePosEx(4, (int)(angleGenOut(90) + 0.5), 100, 150);
-  st.WritePosEx(5, (int)(angleGenOut(180) + 0.5), 100, 150);
-  delay(8000);
+  uint8_t configIDs[4] = {1, 3, 4, 5};
+  int16_t configTargets[4] = {
+    (int)(angleGenOut(180) + 0.5), // Ziel für ID 1
+    (int)(angleGenOut(270) + 0.5), // Ziel für ID 3
+    (int)(angleGenOut(90) + 0.5),  // Ziel für ID 4
+    (int)(angleGenOut(180) + 0.5)  // Ziel für ID 5
+  };
+
+  for (uint8_t i = 0; i < 4; i++) {
+    st.WritePosEx(configIDs[i], configTargets[i], 100, 150);
+  }
+  
+  bool allAtTarget = false;
+  
+  while (!allAtTarget) {
+    bool signalLost = false;
+    allAtTarget = true;
+    
+    for (uint8_t i = 0; i < 4; i++) {
+      int16_t currentPos = st.ReadPos(configIDs[i]);
+      
+      if (currentPos == -1) {
+        signalLost = true;
+        allAtTarget = false;
+        break; 
+      }
+      
+      if (abs(currentPos - configTargets[i]) > 25) {
+        allAtTarget = false;
+      }
+    }
+    
+    if (signalLost) {
+      Serial.println("WARNUNG: Signal verloren oder Servo offline! Befehl wird neu gesendet...");
+      for (uint8_t i = 0; i < 4; i++) {
+        st.WritePosEx(configIDs[i], configTargets[i], 100, 150);
+      }
+      delay(40);
+    }
+    else if (!allAtTarget) {
+      delay(50); 
+    }
+  }
   
   setMode(2, 3);
   
