@@ -6,8 +6,6 @@
 const uint8_t S_RXD = 18;
 const uint8_t S_TXD = 19;
 
-volatile bool espNowGesperrt = false;
-
 // Speicher für die empfangenen Daten
 volatile uint8_t wertSpeicher[20];
 volatile uint8_t speicherIndex = 0;
@@ -48,8 +46,6 @@ typedef struct struct_message {
 struct_message eingehendeDaten;
 
 void OnDataRecv(const esp_now_recv_info *info, const uint8_t *incomingData, int len) {
-  if (espNowGesperrt) return; 
-
   memcpy(&eingehendeDaten, incomingData, sizeof(eingehendeDaten));
   
   if (eingehendeDaten.colorID < 8) {
@@ -63,14 +59,28 @@ void OnDataRecv(const esp_now_recv_info *info, const uint8_t *incomingData, int 
   }
 }
 
+void stoppeEspNow() {
+  esp_now_deinit();
+  WiFi.mode(WIFI_OFF);
+}
+
+void starteEspNow() {
+  memset((void*)wertSpeicher, 0, sizeof(wertSpeicher));
+  speicherIndex = 0;
+
+  WiFi.mode(WIFI_STA);
+  delay(10);
+
+  esp_now_init();
+  esp_now_register_recv_cb(OnDataRecv);
+}
+
 uint8_t holeGefilterteFarbe() {
   uint32_t farbZaehler[8];
   
-  espNowGesperrt = true; 
   for (uint8_t i = 0; i < 20; i++) {
     farbZaehler[wertSpeicher[i]]++;
   }
-  espNowGesperrt = false; 
   
   uint8_t haeufigsteFarbeID = 0;
   uint32_t maximaleAnzahl = 0;
@@ -405,7 +415,9 @@ uint8_t holeSteinUndLeseFarbe() {
   moveToCoordinate(0.0, 330.0, 200.0, 130.0);
   moveToCoordinate(0.0, 330.0, 80.0, 130.0);
 
+  starteEspNow();
   delay(4000); 
+  stoppeEspNow();
 
   uint8_t erkannteFarbeID = holeGefilterteFarbe();
 
@@ -467,9 +479,6 @@ void setup() {
   WiFi.mode(WIFI_STA);
   Serial1.begin(1000000, SERIAL_8N1, S_RXD, S_TXD);
   st.pSerial = &Serial1;
-
-  esp_now_init();
-  esp_now_register_recv_cb(OnDataRecv);
 
   s2AutoConfig();
   initArmPosition();
