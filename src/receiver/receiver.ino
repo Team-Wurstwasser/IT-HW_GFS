@@ -7,9 +7,9 @@ const uint8_t S_RXD = 18;
 const uint8_t S_TXD = 19;
 
 // Speicher für die empfangenen Daten
-volatile uint8_t wertSpeicher[20] = {0};
-volatile uint8_t speicherIndex = 0;
-volatile unsigned long letzteStichprobeZeit = 0;
+volatile uint8_t colorBuffer[20] = {0};
+volatile uint8_t bufferIndex = 0;
+volatile unsigned long lastSampleTime = 0;
 
 SMS_STS st;
 
@@ -39,60 +39,62 @@ String tableColor[8] = {
   "Brown"
 };
 
+struct Coordinate { float x, y, z, theta; };
+
+const Coordinate PICKUP_HOVER = {0.0, 330.0, 200.0, 130.0}; // Über dem Stein schweben
+const Coordinate PICKUP_SCAN  = {0.0, 330.0,  85.0, 130.0}; // Zum Scannen absenken
+const Coordinate PICKUP_GRAB  = {0.0, 351.0,  70.0, 250.0}; // Position zum Greifen
+const Coordinate PICKUP_LIFT  = {0.0, 351.0, 200.0, 250.0}; // Stein anheben
+
+Coordinate dropLocations[8] = {
+  { 250.0, -70.0, 95.0, 250.0 },  // 0: No color (Default)
+  { 250.0, -70.0, 95.0, 250.0 },  // 1: Black (Default)
+  { -70.0, -315.0, 95.0, 250.0 }, // 2: Blue
+  {  25.0, -315.0, 95.0, 250.0 }, // 3: Green
+  { -70.0, -250.0, 95.0, 250.0 }, // 4: Yellow
+  {  25.0, -250.0, 95.0, 250.0 }, // 5: Red
+  { 250.0,   25.0, 95.0, 250.0 }, // 6: White
+  { 250.0, -70.0, 95.0, 250.0 }   // 7: Brown (Default)
+};
+
 typedef struct struct_message {
   uint8_t colorID;
 } struct_message;
 
-struct_message eingehendeDaten;
+struct_message receivedData;
 
 void OnDataRecv(const esp_now_recv_info *info, const uint8_t *incomingData, int len) {
-  memcpy(&eingehendeDaten, incomingData, sizeof(eingehendeDaten));
+  memcpy(&receivedData, incomingData, sizeof(receivedData));
   
-  if (eingehendeDaten.colorID < 8) {
-    unsigned long jetzt = millis();
+  if (receivedData.colorID < 8) {
+    unsigned long currentTime = millis();
     
-    if (jetzt - letzteStichprobeZeit >= 100) {
-      wertSpeicher[speicherIndex] = eingehendeDaten.colorID;
-      speicherIndex = (speicherIndex + 1) % 20; 
-      letzteStichprobeZeit = jetzt;
+    if (currentTime - lastSampleTime >= 100) {
+      colorBuffer[bufferIndex] = receivedData.colorID;
+      bufferIndex = (bufferIndex + 1) % 20; 
+      lastSampleTime = currentTime;
     }
   }
 }
 
-void stoppeEspNow() {
-  esp_now_deinit();
-  WiFi.mode(WIFI_OFF);
-}
-
-void starteEspNow() {
-  memset((void*)wertSpeicher, 0, sizeof(wertSpeicher));
-  speicherIndex = 0;
-
-  WiFi.mode(WIFI_STA);
-  delay(10);
-
-  esp_now_init();
-  esp_now_register_recv_cb(OnDataRecv);
-}
-
-uint8_t holeGefilterteFarbe() {
-  uint32_t farbZaehler[8] = {0};
+uint8_t getFilteredColor() {
+  uint32_t colorCounter[8] = {0};
   
   for (uint8_t i = 0; i < 20; i++) {
-    farbZaehler[wertSpeicher[i]]++;
+    colorCounter[colorBuffer[i]]++;
   }
   
-  uint8_t haeufigsteFarbeID = 0;
-  uint32_t maximaleAnzahl = 0;
+  uint8_t mostFrequentColorID = 0;
+  uint32_t maxCount = 0;
   
   for (uint8_t i = 0; i < 8; i++) {
-    if (farbZaehler[i] > maximaleAnzahl) {
-      maximaleAnzahl = farbZaehler[i];
-      haeufigsteFarbeID = i;
+    if (colorCounter[i] > maxCount) {
+      maxCount = colorCounter[i];
+      mostFrequentColorID = i;
     }
   }
   
-  return haeufigsteFarbeID;
+  return mostFrequentColorID;
 }
 
 float angleGenOut(float angleInput) { return angleInput * 4096.0 / 360.0; }
@@ -293,32 +295,32 @@ void moveToCoordinate(double x, double y, double z, double theta){
   {
     ctrlMove();
     
-    bool alleAmZiel = false;
+    bool allAtTarget = false;
     
-    while (!alleAmZiel) {
-      bool signalVerloren = false;
-      alleAmZiel = true;
+    while (!allAtTarget) {
+      bool signalLost = false;
+      allAtTarget = true;
       
       for (uint8_t i = 0; i < STID_count; i++) {
-        int16_t aktuellePos = st.ReadPos(STID[i]);
+        int16_t currentPos = st.ReadPos(STID[i]);
         
-        if (aktuellePos == -1) {
-          signalVerloren = true;
-          alleAmZiel = false;
+        if (currentPos == -1) {
+          signalLost = true;
+          allAtTarget = false;
           break; 
         }
         
-        if (abs(aktuellePos - STPos[i]) > 25) {
-          alleAmZiel = false;
+        if (abs(currentPos - STPos[i]) > 25) {
+          allAtTarget = false;
         }
       }
       
-      if (signalVerloren) {
+      if (signalLost) {
         Serial.println("WARNUNG: Signal verloren oder Servo offline! Befehl wird neu gesendet...");
         ctrlMove();
         delay(40);
       }
-      else if (!alleAmZiel) {
+      else if (!allAtTarget) {
         delay(50); 
       }
     }
@@ -342,9 +344,9 @@ void openGripper(uint16_t speed = 2000) {
   int16_t lastPos = -1;
   uint32_t lastCheckTime = millis();
   uint8_t errorCounter = 0;
-  bool AmZiel = false;
+  bool atTarget = false;
   
-  while (!AmZiel) {
+  while (!atTarget) {
     delay(30);
     
     int16_t currentPos = st.ReadPos(gripperID);
@@ -356,14 +358,14 @@ void openGripper(uint16_t speed = 2000) {
     }
 
     if (abs(currentPos - targetPos) < 15) {
-      AmZiel = true;
+      atTarget = true;
       break; 
     }
     
     if (millis() - lastCheckTime > 150) {
       if (lastPos != -1 && abs(currentPos - lastPos) < 8) { 
         st.WritePosEx(gripperID, currentPos, 1000, 50);
-        AmZiel = true;
+        atTarget = true;
         break; 
       }
       lastPos = currentPos;
@@ -380,21 +382,21 @@ void closeGripper(uint16_t speed = 2000) {
   
   int16_t lastPos = -1; 
   uint32_t lastCheckTime = millis();
-  bool AmZiel = false;
+  bool atTarget = false;
   
-  while (!AmZiel) {
+  while (!atTarget) {
     delay(30);
     
     int16_t currentPos = st.ReadPos(gripperID);
     
     if (currentPos == -1) {
-      Serial.println("WARNUNG: Greifer-Signal verloren oder Greifer-Servo! Befehl wird neu gesendet...");
+      Serial.println("WARNUNG: Greifer-Signal verloren oder Greifer-Servo offline! Befehl wird neu gesendet...");
       controlGripperRaw(targetPos, speed);
       continue;
     }
 
     if (abs(currentPos - targetPos) < 15) {
-      AmZiel = true;
+      atTarget = true;
       break; 
     }
     
@@ -402,7 +404,7 @@ void closeGripper(uint16_t speed = 2000) {
       if (lastPos != -1 && abs(currentPos - lastPos) < 8) { 
         st.WritePosEx(gripperID, currentPos, 1000, 50);
         delay(150);
-        AmZiel = true;
+        atTarget = true;
         break; 
       }
       lastPos = currentPos;
@@ -411,53 +413,27 @@ void closeGripper(uint16_t speed = 2000) {
   }
 }
 
-uint8_t holeSteinUndLeseFarbe() {
-  moveToCoordinate(0.0, 330.0, 200.0, 130.0);
-  moveToCoordinate(0.0, 330.0, 85.0, 130.0);
+uint8_t pickUpAndReadColor() {
+  moveToCoordinate(PICKUP_HOVER.x, PICKUP_HOVER.y, PICKUP_HOVER.z, PICKUP_HOVER.theta);
+  moveToCoordinate(PICKUP_SCAN.x, PICKUP_SCAN.y, PICKUP_SCAN.z, PICKUP_SCAN.theta);
 
-  starteEspNow();
-  delay(4000); 
-  stoppeEspNow();
+  delay(4000);
+  uint8_t detectedColorID = getFilteredColor();
 
-  uint8_t erkannteFarbeID = holeGefilterteFarbe();
+  Serial.print("Color: ");
+  Serial.println(tableColor[detectedColorID]);
 
-  if (erkannteFarbeID < 8) {
-    Serial.print("Farbe: ");
-    Serial.println(tableColor[erkannteFarbeID]);
-  }
-
-  moveToCoordinate(0.0, 351.0, 70.0, 250.0);
+  moveToCoordinate(PICKUP_GRAB.x, PICKUP_GRAB.y, PICKUP_GRAB.z, PICKUP_GRAB.theta);
   closeGripper();
 
-  moveToCoordinate(0.0, 351.0, 200.0, 250.0);
+  moveToCoordinate(PICKUP_LIFT.x, PICKUP_LIFT.y, PICKUP_LIFT.z, PICKUP_LIFT.theta);
 
-  return erkannteFarbeID;
+  return detectedColorID;
 }
 
-void gebeSteinAb(int id) {
-  int farbeID = id;
-
-  switch (farbeID) {
-    case 2: 
-      moveToCoordinate(-70.0, -315.0, 95.0, 250.0);
-      break;
-    case 3: 
-      moveToCoordinate(25.0, -315.0, 95.0, 250.0);
-      break;
-    case 4: 
-      moveToCoordinate(-70.0, -250.0, 95.0, 250.0);
-      break;
-    case 5: 
-      moveToCoordinate(25.0, -250.0, 95.0, 250.0);
-      break;
-    case 6: 
-      moveToCoordinate(250.0, 25.0, 95.0, 250.0);
-      break;
-    default:
-      moveToCoordinate(250.0, -70.0, 95.0, 250.0);
-      break;
-  }
-
+void dropBlock(int id) {
+  if (id < 0 || id > 7) id = 0;
+  moveToCoordinate(dropLocations[id].x, dropLocations[id].y, dropLocations[id].z, dropLocations[id].theta);
   openGripper();
 }
 
@@ -476,14 +452,18 @@ void initArmPosition() {
 
 void setup() {
   Serial.begin(115200);
+  WiFi.mode(WIFI_STA);
   Serial1.begin(1000000, SERIAL_8N1, S_RXD, S_TXD);
   st.pSerial = &Serial1;
+
+  esp_now_init();
+  esp_now_register_recv_cb(OnDataRecv);
 
   s2AutoConfig();
   initArmPosition();
 }
 
 void loop() {
-  int farbID = holeSteinUndLeseFarbe();
-  gebeSteinAb(farbID);
+  int colorID = pickUpAndReadColor();
+  dropBlock(colorID);
 }
