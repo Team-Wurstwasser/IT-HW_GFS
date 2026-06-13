@@ -476,7 +476,6 @@ void initArmPosition() {
 
 void setup() {
   Serial.begin(115200);
-  WiFi.mode(WIFI_STA);
   Serial1.begin(1000000, SERIAL_8N1, S_RXD, S_TXD);
   st.pSerial = &Serial1;
 
