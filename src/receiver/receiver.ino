@@ -151,76 +151,67 @@ void s2AutoConfig() {
 }
 
 bool wigglePlaneIK(double LA, double aIn, double bIn) {
-  double LB;
-  double L2C;
-  double LC;
-  double alpha;
-  double beta;
-  double lambda;
-  double psi;
   bIn = -bIn;
-  if(bIn > 0){
-    L2C = aIn * aIn + bIn * bIn;
-    LC = sqrt(L2C);
-    lambda = atan(aIn/bIn) * 180 / M_PI;
-    psi = acos(LA/LC) * 180 / M_PI;
-    LB = sqrt(L2C - LA * LA);
-    alpha = psi + lambda - 90;
-  }
-  else if(bIn == 0){
-    alpha = 90+ asin(LA/aIn) * 180 / M_PI;
-    L2C = aIn * aIn + bIn * bIn;
+  
+  double L2C = aIn * aIn + bIn * bIn;
+  double LC = sqrt(L2C);
+  double LB = 0;
+  double alpha = NAN;
+
+  if (bIn == 0) {
+    alpha = 90.0 + asin(LA / aIn) * RAD_TO_DEG;
     LB = sqrt(L2C);
-  }
-  else if(bIn < 0){
-    bIn = -bIn;
-    L2C = aIn * aIn + bIn * bIn;
-    LC = sqrt(L2C);
-    lambda = atan(aIn/bIn) * 180 / M_PI;
-    psi = acos(LA/LC) * 180 / M_PI;
+  } 
+  else {
+    double absB = fabs(bIn);
+    double lambda = atan(aIn / absB) * RAD_TO_DEG;
+    double psi = acos(LA / LC) * RAD_TO_DEG;
     LB = sqrt(L2C - LA * LA);
-    alpha = 90 - lambda + psi;
+
+    if (bIn > 0) {
+      alpha = psi + lambda - 90.0;
+    } else {
+      alpha = 90.0 - lambda + psi;
+    }
   }
-  if(!isnan(alpha)){
-    InfoBuffer[angle_1] = alpha + 90;
+
+  if (!isnan(alpha)) {
+    InfoBuffer[angle_1] = alpha + 90.0;
     InfoBuffer[len_totalXY] = LB - LEN_B;
     return false;
   }
-  else{
-    return true;
-  }
+  return true;
 }
 
-bool EoAT_IK(float angleInput){
-  float betaGenOut;
-  float betaRad;
-  float angleRad;
-  float aGenOut;
-  float bGenOut;
+bool EoAT_IK(double angleInput){
+  double betaGenOut;
+  double betaRad;
+  double angleRad;
+  double aGenOut;
+  double bGenOut;
+
+  angleRad = angleInput * DEG_TO_RAD;
 
   if(angleInput == 90){
     betaGenOut = angleInput - LEN_G;
-    betaRad    = betaGenOut*M_PI/180;
-    angleRad   = angleInput*M_PI/180;
+    betaRad    = betaGenOut * DEG_TO_RAD;
     aGenOut = LEN_E;
     bGenOut = LEN_F;
   }
   else if(angleInput < 90){
     betaGenOut = 90 - angleInput;
-    betaRad    = betaGenOut*M_PI/180;
-    angleRad   = angleInput*M_PI/180;
-    aGenOut = cos(angleRad)*LEN_F + cos(betaRad)*LEN_E;
-    bGenOut = sin(angleRad)*LEN_F - sin(betaRad)*LEN_E;
+    betaRad    = betaGenOut * DEG_TO_RAD;
+    aGenOut = cos(angleRad) * LEN_F + cos(betaRad) * LEN_E;
+    bGenOut = sin(angleRad) * LEN_F - sin(betaRad) * LEN_E;
     betaGenOut = -betaGenOut;
   }
   else if(angleInput > 90){
     betaGenOut = LEN_G - (180 - angleInput);
-    betaRad    = betaGenOut*M_PI/180;
-    angleRad   = angleInput*M_PI/180;
-    aGenOut = - cos(M_PI-angleRad)*LEN_F + cos(betaRad)*LEN_E;
-    bGenOut = sin(M_PI-angleRad)*LEN_F + sin(betaRad)*LEN_E;
+    betaRad    = betaGenOut * DEG_TO_RAD;
+    aGenOut = - cos(M_PI - angleRad) * LEN_F + cos(betaRad) * LEN_E;
+    bGenOut = sin(M_PI - angleRad) * LEN_F + sin(betaRad) * LEN_E;
   }
-  if(!isnan(betaGenOut) || !isnan(aGenOut) || !isnan(bGenOut)){
+  if(!isnan(betaGenOut) && !isnan(aGenOut) && !isnan(bGenOut)){
     InfoBuffer[angle_EoAT] = betaGenOut;
     InfoBuffer[len_a] = aGenOut;
     InfoBuffer[len_b] = bGenOut;
@@ -241,18 +232,18 @@ bool simpleLinkageIK(double LA, double LB, double aIn, double bIn){
   double lambda;
   double delta;
   if(bIn == 0){
-    psi   = acos((LA * LA + aIn * aIn - LB * LB)/(2 * LA * aIn)) * 180 / M_PI;
+    psi   = acos((LA * LA + aIn * aIn - LB * LB) / (2 * LA * aIn)) * RAD_TO_DEG;
     alpha = 90 - psi;
-    omega = acos((aIn * aIn + LB * LB - LA * LA)/(2 * aIn * LB)) * 180 / M_PI;
+    omega = acos((aIn * aIn + LB * LB - LA * LA) / (2 * aIn * LB)) * RAD_TO_DEG;
     beta  = psi + omega;
   }
   else{
     L2C = aIn * aIn + bIn * bIn;
     LC  = sqrt(L2C);
-    lambda = atan(bIn/aIn) * 180 / M_PI;
-    psi    = acos((LA * LA + L2C - LB * LB)/(2 * LA * LC)) * 180 / M_PI;
+    lambda = atan(bIn / aIn) * RAD_TO_DEG;
+    psi    = acos((LA * LA + L2C - LB * LB) / (2 * LA * LC)) * RAD_TO_DEG;
     alpha = 90 - lambda - psi;
-    omega = acos((LB * LB + L2C - LA * LA)/(2 * LC * LB)) * 180 / M_PI;
+    omega = acos((LB * LB + L2C - LA * LA) / (2 * LC * LB)) * RAD_TO_DEG;
     beta  = psi + omega;
   }
   delta = 90 - alpha - beta;
@@ -268,30 +259,31 @@ bool simpleLinkageIK(double LA, double LB, double aIn, double bIn){
   }
 }
 
-bool ctrlIK(float x, float y, float z, float theta) {
+bool ctrlIK(double x, double y, double z, double theta) {
   theta = theta / 2.0;
-  bool nanWiggleIK = wigglePlaneIK(LEN_H, x, y);
-  bool nanEoAT_IK = EoAT_IK(theta);
-  bool nanSimpleLIK = simpleLinkageIK(LEN_C, LEN_D, (InfoBuffer[len_totalXY]-InfoBuffer[len_a]), (z - LEN_A + InfoBuffer[len_b]));
-    if(nanSimpleLIK || nanWiggleIK || nanEoAT_IK){
+
+  if (wigglePlaneIK(LEN_H, x, y) || EoAT_IK(theta)) {
     return true;
   }
-  else{
-    InfoBuffer[angle_4] = InfoBuffer[angle_IKE] + InfoBuffer[angle_EoAT];
-    return false;
+  
+  if(simpleLinkageIK(LEN_C, LEN_D, (InfoBuffer[len_totalXY] - InfoBuffer[len_a]), (z - LEN_A + InfoBuffer[len_b]))){
+    return true;
   }
+  
+  InfoBuffer[angle_4] = InfoBuffer[angle_IKE] + InfoBuffer[angle_EoAT];
+  return false;
 }
 
 void ctrlMove() {
-  STPos[0] = (int)(angleGenOut(STDirection[0]*InfoBuffer[angle_1]) + 0.5);
-  STPos[1] = (int)(angleGenOut(STDirection[1]*InfoBuffer[angle_2]+15)*3 + 0.5);
-  STPos[2] = (int)(angleGenOut(STDirection[2]*InfoBuffer[angle_3]+180)  + 0.5);
-  STPos[3] = (int)(angleGenOut(STDirection[3]*InfoBuffer[angle_4]+180)  + 0.5);
+  STPos[0] = (int)(angleGenOut(STDirection[0] * InfoBuffer[angle_1]) + 0.5);
+  STPos[1] = (int)(angleGenOut(STDirection[1] * InfoBuffer[angle_2]+15) * 3 + 0.5);
+  STPos[2] = (int)(angleGenOut(STDirection[2] * InfoBuffer[angle_3]+180) + 0.5);
+  STPos[3] = (int)(angleGenOut(STDirection[3] * InfoBuffer[angle_4]+180) + 0.5);
   
   st.SyncWritePosEx(STID, 4, STPos, STSpd, STAc);
 }
 
-void moveToCoordinate(float x, float y, float z, float theta){
+void moveToCoordinate(double x, double y, double z, double theta){
   bool nanCtrlIK = ctrlIK(x, y, z, theta);
   if (!nanCtrlIK)
   {
@@ -377,7 +369,7 @@ uint8_t holeSteinUndLeseFarbe() {
   moveToCoordinate(0.0, 330.0, 200.0, 130.0);
   delay(1200);
 
-  moveToCoordinate(0.0, 330.0, 85.0, 130.0);
+  moveToCoordinate(0.0, 330.0, 80.0, 130.0);
   delay(4000); 
 
   uint8_t erkannteFarbeID = holeGefilterteFarbe();
@@ -387,7 +379,7 @@ uint8_t holeSteinUndLeseFarbe() {
     Serial.println(tableColor[erkannteFarbeID]);
   }
 
-  moveToCoordinate(0.0, 351.0, 70.0, 250.0);
+  moveToCoordinate(0.0, 351.0, 65.0, 250.0);
   delay(800); 
   closeGripper();
 
@@ -402,22 +394,22 @@ void gebeSteinAb(int id) {
 
   switch (farbeID) {
     case 2: 
-      moveToCoordinate(-70.0, -315.0, 95.0, 250.0);
+      moveToCoordinate(-70.0, -315.0, 90.0, 250.0);
       break;
     case 3: 
-      moveToCoordinate(25.0, -315.0, 95.0, 250.0);
+      moveToCoordinate(25.0, -315.0, 90.0, 250.0);
       break;
     case 4: 
-      moveToCoordinate(-70.0, -250.0, 95.0, 250.0);
+      moveToCoordinate(-70.0, -250.0, 90.0, 250.0);
       break;
     case 5: 
-      moveToCoordinate(25.0, -250.0, 95.0, 250.0);
+      moveToCoordinate(25.0, -250.0, 90.0, 250.0);
       break;
     case 6: 
-      moveToCoordinate(250.0, 25.0, 95.0, 250.0);
+      moveToCoordinate(250.0, 25.0, 90.0, 250.0);
       break;
     default:
-      moveToCoordinate(250.0, -70.0, 95.0, 250.0);
+      moveToCoordinate(250.0, -70.0, 90.0, 250.0);
       break;
   }
 
