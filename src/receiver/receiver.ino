@@ -7,7 +7,7 @@ const uint8_t S_RXD = 18;
 const uint8_t S_TXD = 19;
 
 // Speicher für die empfangenen Daten
-volatile uint8_t wertSpeicher[20];
+volatile uint8_t wertSpeicher[20] = {0};
 volatile uint8_t speicherIndex = 0;
 volatile unsigned long letzteStichprobeZeit = 0;
 
@@ -76,7 +76,7 @@ void starteEspNow() {
 }
 
 uint8_t holeGefilterteFarbe() {
-  uint32_t farbZaehler[8];
+  uint32_t farbZaehler[8] = {0};
   
   for (uint8_t i = 0; i < 20; i++) {
     farbZaehler[wertSpeicher[i]]++;
