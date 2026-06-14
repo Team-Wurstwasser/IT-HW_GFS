@@ -27,6 +27,7 @@ const uint8_t gripperID = 5;
 
 const int torqueThreshold = 300;
 const int reverseRange = 4900;
+const int positionTolerance = 25;
 
 String tableColor[8] = {
   "No color",
@@ -158,7 +159,7 @@ void s2AutoConfig() {
         break; 
       }
       
-      if (abs(currentPos - configTargets[i]) > 25) {
+      if (abs(currentPos - configTargets[i]) > positionTolerance) {
         allAtTarget = false;
       }
     }
@@ -348,7 +349,7 @@ void moveToCoordinate(double x, double y, double z, double theta){
           break; 
         }
         
-        if (abs(currentPos - STPos[i]) > 25) {
+        if (abs(currentPos - STPos[i]) > positionTolerance) {
           allAtTarget = false;
         }
       }
@@ -395,7 +396,7 @@ void openGripper(uint16_t speed = 2000) {
       continue;
     }
 
-    if (abs(currentPos - targetPos) < 15) {
+    if (abs(currentPos - targetPos) < positionTolerance) {
       atTarget = true;
       break; 
     }
@@ -433,7 +434,7 @@ void closeGripper(uint16_t speed = 2000) {
       continue;
     }
 
-    if (abs(currentPos - targetPos) < 15) {
+    if (abs(currentPos - targetPos) < positionTolerance) {
       atTarget = true;
       break; 
     }
