@@ -100,7 +100,7 @@ void setup() {
 
 void loop() {
   uint8_t color = sensorRead();
-  daten.colorID = color;
+  data.colorID = color;
   esp_now_send(receiverAddress, (uint8_t *) &data, sizeof(data));
   delay(200);
 }
