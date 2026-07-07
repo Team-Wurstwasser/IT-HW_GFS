@@ -14,7 +14,7 @@ volatile unsigned long lastSampleTime = 0; // Zeitstempel zur Begrenzung der Abt
 
 SMS_STS st; // Instanz für die Steuerung der SMS/STS Feetech-Servos
 
-// Denavit-Hartenberg / Geometrische Längenmaße des Roboterarms
+// Geometrische Längenmaße des Roboterarms
 const float LEN_A = 115.432, LEN_B = 41.0513, LEN_C = 168.8579, LEN_D = 127.9234, LEN_E = 108.5357, LEN_F = 7.7076, LEN_G = 90.0, LEN_H = -13.75;
 
 // Indizes für das InfoBuffer-Array zur Speicherung berechneter Gelenkwinkel und Längen
