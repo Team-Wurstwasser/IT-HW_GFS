@@ -195,71 +195,68 @@ void s2AutoConfig() {
   }
 }
 
-bool wigglePlaneIK(double LA, double aIn, double bIn) {
-  bIn = -bIn;
+bool calculateXYPlane(double x, double y) {
+  y = -y;
   
-  double L2C = aIn * aIn + bIn * bIn;
-  double LC = sqrt(L2C);
-  double LB = 0;
-  double alpha = NAN;
+  double squaredDistance = x * x + y * y;
+  double effectiveArmLength;
+  double Angle;
 
-  if (bIn == 0) {
-    alpha = 90.0 + asin(LA / aIn) * RAD_TO_DEG;
-    LB = sqrt(L2C);
+  if (y == 0) {
+    Angle = 90.0 + asin(LEN_H / x) * RAD_TO_DEG;
+    effectiveArmLength = sqrt(squaredDistance);
   } 
   else {
-    double absB = fabs(bIn);
-    double lambda = atan(aIn / absB) * RAD_TO_DEG;
-    double psi = acos(LA / LC) * RAD_TO_DEG;
-    LB = sqrt(L2C - LA * LA);
+    double angleToAxis = atan(x / fabs(y)) * RAD_TO_DEG;
+    double offsetAngleH = acos(LEN_H / sqrt(squaredDistance)) * RAD_TO_DEG;
+    effectiveArmLength = sqrt(squaredDistance - LEN_H * LEN_H);
 
-    if (bIn > 0) {
-      alpha = psi + lambda - 90.0;
+    if (y > 0) {
+      Angle = offsetAngleH + angleToAxis - 90.0;
     } else {
-      alpha = 90.0 - lambda + psi;
+      Angle = 90.0 - angleToAxis + offsetAngleH;
     }
   }
 
-  if (!isnan(alpha)) {
-    InfoBuffer[angle_1] = alpha + 90.0;
-    InfoBuffer[len_totalXY] = LB - LEN_B;
+  if (!isnan(Angle)) {
+    InfoBuffer[angle_1] = Angle + 90.0;
+    InfoBuffer[len_totalXY] = effectiveArmLength - LEN_B;
     return false;
   }
   return true;
 }
 
-bool EoAT_IK(double angleInput){
-  double betaGenOut;
-  double betaRad;
-  double angleRad;
-  double aGenOut;
-  double bGenOut;
+bool calculateGripper(double theta) {
+  double JointAngle;
+  double correctionLengthX;
+  double correctionLengthY;
 
-  angleRad = angleInput * DEG_TO_RAD;
+  double jointAngleRad = theta * DEG_TO_RAD;
 
-  if(angleInput == 90){
-    betaGenOut = angleInput - LEN_G;
-    betaRad    = betaGenOut * DEG_TO_RAD;
-    aGenOut = LEN_E;
-    bGenOut = LEN_F;
+  if(theta == 90){
+    JointAngle = theta - LEN_G;
+    double AngleRad = JointAngle * DEG_TO_RAD;
+    correctionLengthX = LEN_E;
+    correctionLengthY = LEN_F;
   }
-  else if(angleInput < 90){
-    betaGenOut = 90 - angleInput;
-    betaRad    = betaGenOut * DEG_TO_RAD;
-    aGenOut = cos(angleRad) * LEN_F + cos(betaRad) * LEN_E;
-    bGenOut = sin(angleRad) * LEN_F - sin(betaRad) * LEN_E;
-    betaGenOut = -betaGenOut;
+  else if(theta < 90){
+    JointAngle = 90 - theta;
+    double AngleRad = JointAngle * DEG_TO_RAD;
+    correctionLengthX = cos(jointAngleRad) * LEN_F + cos(AngleRad) * LEN_E;
+    correctionLengthY = sin(jointAngleRad) * LEN_F - sin(AngleRad) * LEN_E;
+    JointAngle    = -JointAngle;
   }
-  else if(angleInput > 90){
-    betaGenOut = LEN_G - (180 - angleInput);
-    betaRad    = betaGenOut * DEG_TO_RAD;
-    aGenOut = - cos(M_PI - angleRad) * LEN_F + cos(betaRad) * LEN_E;
-    bGenOut = sin(M_PI - angleRad) * LEN_F + sin(betaRad) * LEN_E;
+  else if(theta > 90){
+    JointAngle = LEN_G - (180 - theta);
+    double AngleRad = JointAngle * DEG_TO_RAD;
+    correctionLengthX = -cos(M_PI - jointAngleRad) * LEN_F + cos(AngleRad) * LEN_E;
+    correctionLengthY = sin(M_PI - jointAngleRad) * LEN_F + sin(AngleRad) * LEN_E;
   }
-  if(!isnan(betaGenOut) && !isnan(aGenOut) && !isnan(bGenOut)){
-    InfoBuffer[angle_EoAT] = betaGenOut;
-    InfoBuffer[len_a] = aGenOut;
-    InfoBuffer[len_b] = bGenOut;
+
+  if(!isnan(JointAngle) && !isnan(correctionLengthX) && !isnan(correctionLengthY)){
+    InfoBuffer[angle_EoAT] = JointAngle;
+    InfoBuffer[len_a] = correctionLengthX;
+    InfoBuffer[len_b] = correctionLengthY;
     return false;
   }
   else{
@@ -267,36 +264,31 @@ bool EoAT_IK(double angleInput){
   }
 }
 
-bool simpleLinkageIK(double LA, double LB, double aIn, double bIn){
-  double psi;
-  double alpha;
-  double omega;
-  double beta;
-  double L2C;
-  double LC;
-  double lambda;
-  double delta;
-  if(bIn == 0){
-    psi   = acos((LA * LA + aIn * aIn - LB * LB) / (2 * LA * aIn)) * RAD_TO_DEG;
-    alpha = 90 - psi;
-    omega = acos((aIn * aIn + LB * LB - LA * LA) / (2 * aIn * LB)) * RAD_TO_DEG;
-    beta  = psi + omega;
+bool calculateJointChain(double chainTargetX, double chainTargetY){
+  double shoulderJointAngle;
+  double elbowJointAngle;
+  double jointCorrectionAngle;
+
+  if(chainTargetY == 0){
+    double angleBaseToTarget = acos((LEN_C * LEN_C + chainTargetX * chainTargetX - LEN_D * LEN_D) / (2 * LEN_C * chainTargetX)) * RAD_TO_DEG;
+    shoulderJointAngle = 90 - angleBaseToTarget;
+    elbowJointAngle    = angleBaseToTarget + acos((chainTargetX * chainTargetX + LEN_D * LEN_D - LEN_C * LEN_C) / (2 * chainTargetX * LEN_D)) * RAD_TO_DEG;
   }
   else{
-    L2C = aIn * aIn + bIn * bIn;
-    LC  = sqrt(L2C);
-    lambda = atan(bIn / aIn) * RAD_TO_DEG;
-    psi    = acos((LA * LA + L2C - LB * LB) / (2 * LA * LC)) * RAD_TO_DEG;
-    alpha = 90 - lambda - psi;
-    omega = acos((LB * LB + L2C - LA * LA) / (2 * LC * LB)) * RAD_TO_DEG;
-    beta  = psi + omega;
+    double squaredDistance = chainTargetX * chainTargetX + chainTargetY * chainTargetY;
+    double directDistance = sqrt(squaredDistance);
+    double planeSlopeAngle = atan(chainTargetY / chainTargetX) * RAD_TO_DEG;
+    
+    double angleBaseToTarget = acos((LEN_C * LEN_C + squaredDistance - LEN_D * LEN_D) / (2 * LEN_C * directDistance)) * RAD_TO_DEG;
+    shoulderJointAngle = 90 - planeSlopeAngle - angleBaseToTarget;
+    elbowJointAngle = angleBaseToTarget + acos((LEN_D * LEN_D + squaredDistance - LEN_C * LEN_C) / (2 * directDistance * LEN_D)) * RAD_TO_DEG;
   }
-  delta = 90 - alpha - beta;
+  jointCorrectionAngle = 90 - shoulderJointAngle - elbowJointAngle;
 
-  if(!isnan(alpha) && !isnan(beta) && !isnan(delta)){
-    InfoBuffer[angle_2]   = alpha;
-    InfoBuffer[angle_3]   = beta;
-    InfoBuffer[angle_IKE] = delta;
+  if(!isnan(shoulderJointAngle) && !isnan(elbowJointAngle) && !isnan(jointCorrectionAngle)){
+    InfoBuffer[angle_2] = shoulderJointAngle;
+    InfoBuffer[angle_3] = elbowJointAngle;
+    InfoBuffer[angle_IKE] = jointCorrectionAngle;
     return false;
   }
   else{
@@ -307,11 +299,11 @@ bool simpleLinkageIK(double LA, double LB, double aIn, double bIn){
 bool ctrlIK(double x, double y, double z, double theta) {
   theta = theta / 2.0;
 
-  if (wigglePlaneIK(LEN_H, x, y) || EoAT_IK(theta)) {
+  if (calculateXYPlane(x, y) || calculateGripper(theta)) {
     return true;
   }
   
-  if(simpleLinkageIK(LEN_C, LEN_D, (InfoBuffer[len_totalXY] - InfoBuffer[len_a]), (z - LEN_A + InfoBuffer[len_b]))){
+  if(calculateJointChain((InfoBuffer[len_totalXY] - InfoBuffer[len_a]), (z - LEN_A + InfoBuffer[len_b]))){
     return true;
   }
   
