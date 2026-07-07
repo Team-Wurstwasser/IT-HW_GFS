@@ -281,7 +281,7 @@ bool calculateJointChain(double chainTargetX, double chainTargetY){
     double directDistance = sqrt(squaredDistance);
     double planeSlopeAngle = atan(chainTargetY / chainTargetX) * RAD_TO_DEG;
     
-    // Kosinussatz zur Winkelberechnung im Dreieck (Schulter-Ellenbogen-Zielpunkt)
+    // Kosinussatz zur Winkelberechnung im Dreieck
     double angleBaseToTarget = acos((LEN_C * LEN_C + squaredDistance - LEN_D * LEN_D) / (2 * LEN_C * directDistance)) * RAD_TO_DEG;
     shoulderJointAngle = 90 - planeSlopeAngle - angleBaseToTarget;
     elbowJointAngle = angleBaseToTarget + acos((LEN_D * LEN_D + squaredDistance - LEN_C * LEN_C) / (2 * directDistance * LEN_D)) * RAD_TO_DEG;
