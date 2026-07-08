@@ -114,9 +114,7 @@ void setup() {
   WiFi.mode(WIFI_STA);
 
   // 3. ESP-NOW initialisieren
-  if (esp_now_init() != ESP_OK) {
-    return;
-  }
+  esp_now_init();
   
   // 4. Empfänger-Informationen konfigurieren
   memcpy(peerInfo.peer_addr, receiverAddress, 6); // MAC-Adresse kopieren
