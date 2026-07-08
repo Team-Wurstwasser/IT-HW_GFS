@@ -382,6 +382,7 @@ void openGripper(uint16_t speed = 2000) {
     int16_t currentPos = st.ReadPos(gripperID);
     
     if (currentPos == -1) {
+      Serial.println("WARNUNG: Greifer-Signal verloren oder Greifer-Servo offline! Befehl wird neu gesendet...");
       controlGripperRaw(targetPos, speed);
       continue;
     }
@@ -417,6 +418,7 @@ void closeGripper(uint16_t speed = 2000) {
     int16_t currentPos = st.ReadPos(gripperID);
     
     if (currentPos == -1) {
+      Serial.println("WARNUNG: Greifer-Signal verloren oder Greifer-Servo offline! Befehl wird neu gesendet...");
       controlGripperRaw(targetPos, speed);
       continue;
     }
