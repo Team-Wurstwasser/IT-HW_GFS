@@ -1,7 +1,29 @@
+#include <Arduino.h>
 #include <SCServo.h>
 #include <math.h>
 #include <esp_now.h>
 #include <WiFi.h>
+
+void OnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int len);
+uint8_t getFilteredColor();
+int16_t angleGenOut(float angleInput);
+void setMode(uint8_t id, uint8_t mode);
+void setMiddle(uint8_t id);
+void servoStop(uint8_t id);
+int16_t readServoLoad(uint8_t id);
+void s2AutoConfig();
+bool calculateXYPlane(double x, double y);
+bool calculateGripper(double theta);
+bool calculateJointChain(double chainTargetX, double chainTargetY);
+bool ctrlIK(double x, double y, double z, double theta);
+void ctrlMove();
+void moveToCoordinate(double x, double y, double z, double theta);
+void controlGripperRaw(int16_t targetPos, uint16_t speed);
+void openGripper(uint16_t speed = 2000);
+void closeGripper(uint16_t speed = 2000);
+uint8_t pickUpAndReadColor();
+void dropBlock(int id);
+void initArmPosition();
 
 // Pin-Belegung für die serielle Kommunikation mit den Servos
 const uint8_t S_RXD = 18;
@@ -70,8 +92,30 @@ typedef struct struct_message {
 
 struct_message receivedData;
 
+void setup() {
+  Serial.begin(115200);
+  WiFi.mode(WIFI_STA); // WiFi-Modus für ESP-NOW initialisieren
+  
+  // Hardware-Serial 1 für das Feetech-Servo-Bussystem konfigurieren
+  Serial1.begin(1000000, SERIAL_8N1, S_RXD, S_TXD);
+  st.pSerial = &Serial1;
 
-void OnDataRecv(const esp_now_recv_info *info, const uint8_t *incomingData, int len) {
+  // ESP-NOW initialisieren und Empfangs-Callback registrieren
+  esp_now_init();
+  esp_now_register_recv_cb(OnDataRecv);
+
+  // Roboterkalibrierung und Startpositionierung ausführen
+  s2AutoConfig();
+  initArmPosition();
+}
+
+void loop() {
+  // Endlosschleife: Farbe scannen, aufheben, farbabhängig sortieren
+  int colorID = pickUpAndReadColor();
+  dropBlock(colorID);
+}
+
+void OnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int len) {
   memcpy(&receivedData, incomingData, sizeof(receivedData));
   
   if (receivedData.colorID < 8) {
@@ -106,8 +150,8 @@ uint8_t getFilteredColor() {
   return mostFrequentColorID;
 }
 
-float angleGenOut(float angleInput) { 
-  return angleInput * 4096.0 / 360.0; 
+int16_t angleGenOut(float angleInput) {
+    return (int16_t)(angleInput * 4096.0 / 360.0 + 0.5);
 }
 
 void setMode(uint8_t id, uint8_t mode) {
@@ -144,10 +188,10 @@ int16_t readServoLoad(uint8_t id) {
 void s2AutoConfig() {
   uint8_t configIDs[4] = {1, 3, 4, 5};
   int16_t configTargets[4] = {
-    (int)(angleGenOut(180) + 0.5),
-    (int)(angleGenOut(270) + 0.5),
-    (int)(angleGenOut(90) + 0.5), 
-    (int)(angleGenOut(180) + 0.5) 
+    angleGenOut(180),
+    angleGenOut(270),
+    angleGenOut(90), 
+    angleGenOut(180) 
   };
 
   // Servos in sichere Ausgangsposition fahren
@@ -368,7 +412,7 @@ void controlGripperRaw(int16_t targetPos, uint16_t speed) {
   st.WritePosEx(gripperID, targetPos, speed, 50);
 }
 
-void openGripper(uint16_t speed = 2000) {
+void openGripper(uint16_t speed) {
   int16_t targetPos = 1300;
   controlGripperRaw(targetPos, speed);
   delay(20);
@@ -403,8 +447,7 @@ void openGripper(uint16_t speed = 2000) {
   }
 }
 
-
-void closeGripper(uint16_t speed = 2000) {
+void closeGripper(uint16_t speed) {
   int16_t targetPos = 2300;
   controlGripperRaw(targetPos, speed);
   delay(20);
@@ -478,27 +521,4 @@ void initArmPosition() {
   // Arbeitsgeschwindigkeit für den Loop erhöhen
   STSpd[0] = 3000; STSpd[1] = 3000; STSpd[2] = 3400; STSpd[3] = 3400;
   openGripper(1500); // Greifer für den Start öffnen
-}
-
-void setup() {
-  Serial.begin(115200);
-  WiFi.mode(WIFI_STA); // WiFi-Modus für ESP-NOW initialisieren
-  
-  // Hardware-Serial 1 für das Feetech-Servo-Bussystem konfigurieren
-  Serial1.begin(1000000, SERIAL_8N1, S_RXD, S_TXD);
-  st.pSerial = &Serial1;
-
-  // ESP-NOW initialisieren und Empfangs-Callback registrieren
-  esp_now_init();
-  esp_now_register_recv_cb(OnDataRecv);
-
-  // Roboterkalibrierung und Startpositionierung ausführen
-  s2AutoConfig();
-  initArmPosition();
-}
-
-void loop() {
-  // Endlosschleife: Farbe scannen, aufheben, farbabhängig sortieren
-  int colorID = pickUpAndReadColor();
-  dropBlock(colorID);
 }

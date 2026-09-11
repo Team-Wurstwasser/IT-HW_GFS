@@ -1,5 +1,10 @@
+#include <Arduino.h>
 #include <esp_now.h>
 #include <WiFi.h>
+
+void sendMode();
+void sensorBegin();
+int8_t sensorRead();
 
 // MAC-Adresse des Empfänger-ESP32
 uint8_t receiverAddress[] = {0x28, 0x05, 0xa5, 0x4f, 0xcf, 0xe0}; 
@@ -26,6 +31,37 @@ int serialValue[4] = {0, 0, 0, 0};
 uint8_t waitTime = 5;          // Wartezeit in Millisekunden für die serielle Antwort
 unsigned long startTime = 0;   // Zeitstempel für Delays
 
+void setup() {
+  // 1. Sensor-Verbindung und Handshake starten
+  sensorBegin();
+  
+  // 2. WiFi starten
+  WiFi.mode(WIFI_STA);
+
+  // 3. ESP-NOW initialisieren
+  esp_now_init();
+  
+  // 4. Empfänger-Informationen konfigurieren
+  memcpy(peerInfo.peer_addr, receiverAddress, 6); // MAC-Adresse kopieren
+  peerInfo.channel = 0;                           // WLAN-Kanal
+  peerInfo.encrypt = false;                       // Übertragung unverschlüsselt
+  
+  // 5. Empfänger-Gerät hinzufügen
+  esp_now_add_peer(&peerInfo);
+}
+
+void loop() {
+  // 1. Aktuelle Farbe vom EV3-Sensor einlesen
+  uint8_t color = sensorRead();
+  
+  // 2. Wert in die Datenstruktur eintragen
+  data.colorID = color;
+  
+  // 3. Daten via ESP-NOW an den Empfänger senden
+  esp_now_send(receiverAddress, (uint8_t *) &data, sizeof(data));
+  
+  delay(200);
+}
 
 void sendMode() {
   // 1. Modus-Typ ankündigen (0x44)
@@ -104,36 +140,4 @@ int8_t sensorRead() {
     resp = 0;
   }
   return resp;
-}
-
-void setup() {
-  // 1. Sensor-Verbindung und Handshake starten
-  sensorBegin();
-  
-  // 2. WiFi starten
-  WiFi.mode(WIFI_STA);
-
-  // 3. ESP-NOW initialisieren
-  esp_now_init();
-  
-  // 4. Empfänger-Informationen konfigurieren
-  memcpy(peerInfo.peer_addr, receiverAddress, 6); // MAC-Adresse kopieren
-  peerInfo.channel = 0;                           // WLAN-Kanal
-  peerInfo.encrypt = false;                       // Übertragung unverschlüsselt
-  
-  // 5. Empfänger-Gerät hinzufügen
-  esp_now_add_peer(&peerInfo);
-}
-
-void loop() {
-  // 1. Aktuelle Farbe vom EV3-Sensor einlesen
-  uint8_t color = sensorRead();
-  
-  // 2. Wert in die Datenstruktur eintragen
-  data.colorID = color;
-  
-  // 3. Daten via ESP-NOW an den Empfänger senden
-  esp_now_send(receiverAddress, (uint8_t *) &data, sizeof(data));
-  
-  delay(200);
 }
