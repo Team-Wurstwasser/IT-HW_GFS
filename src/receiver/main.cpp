@@ -4,7 +4,7 @@
 #include <esp_now.h>
 #include <WiFi.h>
 
-void OnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int len);
+void OnDataRecv(const esp_now_recv_info *info, const uint8_t *incomingData, int len);
 uint8_t getFilteredColor();
 int16_t angleGenOut(float angleInput);
 void setMode(uint8_t id, uint8_t mode);
@@ -115,7 +115,7 @@ void loop() {
   dropBlock(colorID);
 }
 
-void OnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int len) {
+void OnDataRecv(const esp_now_recv_info *info, const uint8_t *incomingData, int len) {
   memcpy(&receivedData, incomingData, sizeof(receivedData));
   
   if (receivedData.colorID < 8) {
