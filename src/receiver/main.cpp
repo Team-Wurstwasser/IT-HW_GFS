@@ -1,8 +1,5 @@
 #include <Arduino.h>
 #include <SCServo.h>
-#include <math.h>
-#include <esp_now.h>
-#include <WiFi.h>
 #include "config.h"
 #include "hardware/gripper.h"
 #include "hardware/calibration.h"
@@ -34,6 +31,8 @@ void setup() {
   // Hardware-Serial 1 für das Feetech-Servo-Bussystem konfigurieren
   Serial1.begin(1000000, SERIAL_8N1, S_RXD, S_TXD);
   st.pSerial = &Serial1;
+
+  initESPNow(); // ESP-NOW initialisieren und konfigurieren
 
   // Roboterkalibrierung und Startpositionierung ausführen
   s2AutoConfig();
