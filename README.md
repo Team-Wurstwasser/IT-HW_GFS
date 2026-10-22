@@ -1,6 +1,6 @@
 # ESP-NOW Roboterarm & EV3 Farbsortier-System
 
-Dieses Projekt implementiert eine drahtlose Farberkennungs- und Sortiersteuerung für einen 4-Achs-Roboterarm (angetrieben durch SCServo/Feetech Smart Servos). Das System besteht aus zwei ESP32-Controllern, die über **ESP-NOW** (ein schnelles, verbindungsloses WLAN-Protokoll) miteinander kommunizieren.
+Dieses Projekt implementiert eine drahtlose Farberkennungs- und Sortiersteuerung für einen 4-Achs-Roboterarm (angetrieben durch SCServo/Feetech Smart Servos). Das System besteht aus zwei ESP32-Controllern, die über **ESP-NOW** miteinander kommunizieren.
 
 ---
 
@@ -13,8 +13,8 @@ Das Projekt ist als PlatformIO-Multi-Environment-Setup aufgebaut und in zwei eig
 * **Funktion:** Initialisiert den EV3-Sensor über ein proprietäres serielles Protokoll (Handshake bei 2400 Baud, danach Wechsel auf 57600 Baud) und fordert aktiv den Farbmodus an. Anschließend wird zyklisch (alle 200 ms) der aktuelle Farbwert ausgelesen und per ESP-NOW an den Empfänger gesendet.
 
 ### 2. Empfänger / Receiver (`src/receiver/`)
-* **Hardware:** ESP32 + Feetech STS/SMS Smart Servos (über Hardware-Serial bei 1 MBaud).
-* **Funktion:** Empfängt die Farbsignale, glättet sie über einen Ringpuffer (Rauschfilterung) und berechnet mittels **inverser Kinematik (IK)** die Gelenkwinkel, um Objekte basierend auf ihrer Farbe präzise zu greifen und auf vordefinierten Koordinaten zu sortieren.
+* **Hardware:** ESP32 + Feetech STS/SMS Smart Servos.
+* **Funktion:** Empfängt die Farbsignale, glättet sie über einen Ringpuffer und berechnet mittels **inverser Kinematik (IK)** die Gelenkwinkel, um Objekte basierend auf ihrer Farbe präzise zu greifen und auf vordefinierten Koordinaten zu sortieren.
 
 ### Projektstruktur
 
@@ -121,27 +121,8 @@ Sowohl beim Homing als auch bei jeder regulären Positionierung wird bei Signalv
 
 ---
 
-## Installation & Inbetriebnahme
-
-### 1. Voraussetzungen
-Das Projekt nutzt PlatformIO. Benötigte Abhängigkeiten (siehe `platformio.ini`):
-* `SCServo` (Feetech, für die Empfänger-Firmware)
-* ESP32-Arduino-Core (`WiFi`, `esp_now` – bereits im Framework enthalten)
-
-### 2. MAC-Adresse anpassen
-Vor dem Hochladen muss die MAC-Adresse des Empfänger-ESP32 ausgelesen und im **Sender-Code** (`transmitter/config.h`) eingetragen werden:
-```cpp
-const uint8_t receiverAddress[] = {0x28, 0x05, 0xa5, 0x4f, 0xcf, 0xe0};
-```
-
-### 3. Firmware bauen und hochladen
-```bash
-# Empfänger (Roboterarm-Steuerung)
-pio run -e receiver -t upload
-
-# Sender (Farbsensor-Modul)
-pio run -e transmitter -t upload
-```
+> [!IMPORTANT]
+> **MAC-Adresse anpassen:** Vor dem Flashen des Senders muss in `src/transmitter/config.h` die MAC-Adresse des eigenen Empfänger-ESP32 eingetragen werden (z. B. `{0xA0, 0xB7, 0x65, 0x12, 0x34, 0x56}`). Die Adresse lässt sich per `WiFi.macAddress()` im Seriellen Monitor auslesen. Ohne diese Änderung kommen keine Daten beim Empfänger an.
 
 ---
 
