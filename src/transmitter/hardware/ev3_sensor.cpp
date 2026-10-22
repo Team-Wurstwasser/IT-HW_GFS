@@ -1,31 +1,11 @@
-#include <esp_now.h>
-#include <WiFi.h>
-
-// MAC-Adresse des Empfänger-ESP32
-uint8_t receiverAddress[] = {0x28, 0x05, 0xa5, 0x4f, 0xcf, 0xe0}; 
-
-// Struktur für die ESP-NOW Datenübertragung
-typedef struct struct_message {
-  uint8_t colorID; // ID der erkannten Farbe
-} struct_message;
-
-struct_message data;          // Instanz der Nachrichten-Struktur
-esp_now_peer_info_t peerInfo; // Informationen über den Empfänger-Peer
-
-// Pin-Definitionen für die serielle Verbindung zum EV3
-const uint8_t EV3_RX_PIN = 26;
-const uint8_t EV3_TX_PIN = 27;
-
-// Definitionen für das EV3-UART-Protokoll
-const uint8_t ACK_BYTE = 0x04;
-const uint8_t NACK_BYTE = 0x02;
-const uint8_t COLOR_MODE_BYTE = 2;
+#include <Arduino.h>
+#include "../config.h"
+#include "ev3_sensor.h"
 
 // Array zum Zwischenspeichern von gelesenen Serial-Bytes
 int serialValue[4] = {0, 0, 0, 0};
 uint8_t waitTime = 5;          // Wartezeit in Millisekunden für die serielle Antwort
 unsigned long startTime = 0;   // Zeitstempel für Delays
-
 
 void sendMode() {
   // 1. Modus-Typ ankündigen (0x44)
@@ -104,36 +84,4 @@ int8_t sensorRead() {
     resp = 0;
   }
   return resp;
-}
-
-void setup() {
-  // 1. Sensor-Verbindung und Handshake starten
-  sensorBegin();
-  
-  // 2. WiFi starten
-  WiFi.mode(WIFI_STA);
-
-  // 3. ESP-NOW initialisieren
-  esp_now_init();
-  
-  // 4. Empfänger-Informationen konfigurieren
-  memcpy(peerInfo.peer_addr, receiverAddress, 6); // MAC-Adresse kopieren
-  peerInfo.channel = 0;                           // WLAN-Kanal
-  peerInfo.encrypt = false;                       // Übertragung unverschlüsselt
-  
-  // 5. Empfänger-Gerät hinzufügen
-  esp_now_add_peer(&peerInfo);
-}
-
-void loop() {
-  // 1. Aktuelle Farbe vom EV3-Sensor einlesen
-  uint8_t color = sensorRead();
-  
-  // 2. Wert in die Datenstruktur eintragen
-  data.colorID = color;
-  
-  // 3. Daten via ESP-NOW an den Empfänger senden
-  esp_now_send(receiverAddress, (uint8_t *) &data, sizeof(data));
-  
-  delay(200);
 }
