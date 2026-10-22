@@ -41,7 +41,7 @@ src/
 
 ---
 
-## 📐 Mathematische Kinematik & Servos
+## Mathematische Kinematik & Servos
 
 Der Roboterarm nutzt geometrische inverse Kinematik, um kartesische Koordinaten $(X, Y, Z)$ und den Endeffektor-Winkel ($\theta$) in Servo-Ticks (0–4095) umzurechnen. Zentrale Funktion ist `ctrlIK()`, die folgende Teilschritte kombiniert:
 
@@ -53,7 +53,7 @@ Die berechneten Winkel werden in `ctrlMove()` in Servo-Steps (`angleGenOut`) umg
 
 ---
 
-## 📋 Farbtabelle & Sortierlogik
+## Farbtabelle & Sortierlogik
 
 Das System erkennt bis zu 8 Zustände (0–7). Je nach erkannter Farbe wird das Objekt über die Koordinatentabelle `dropLocations[]` zu einer anderen Zielposition gebracht:
 
@@ -72,7 +72,7 @@ Farbwerte außerhalb des gültigen Bereichs (0–7) werden von `dropBlock()` sic
 
 ---
 
-## 📡 Farberkennung & Signalfilterung
+## Farberkennung & Signalfilterung
 
 Da die ESP-NOW-Übertragung Ausreißer und Rauschen enthalten kann, wird die Farberkennung zweistufig stabilisiert:
 
@@ -83,7 +83,7 @@ Im Ablauf wartet der Arm nach dem Anfahren der Scan-Position 4 Sekunden, damit g
 
 ---
 
-## ⚙️ Homing & Kalibrierung (`s2AutoConfig`)
+## Homing & Kalibrierung (`s2AutoConfig`)
 
 Beim Start führt der Empfänger-ESP32 eine automatische Kalibrierung für **Achse 2** durch:
 
@@ -96,7 +96,7 @@ Sowohl beim Homing als auch bei jeder regulären Positionierung wird bei Signalv
 
 ---
 
-## 🤏 Greifersteuerung
+## Greifersteuerung
 
 `openGripper()` und `closeGripper()` fahren den Greifer-Servo (ID 5) zu festen Zielpositionen (1300 bzw. 2300) und überwachen dabei die Bewegung:
 
@@ -105,7 +105,7 @@ Sowohl beim Homing als auch bei jeder regulären Positionierung wird bei Signalv
 
 ---
 
-## 🔄 Programmablauf
+## Programmablauf
 
 ### Empfänger (`receiver/main.cpp`, `loop()`)
 1. **Scan-Position anfahren:** Der Arm bewegt sich über die Sicherheits-Überflugsposition (`PICKUP_HOVER`) zur Scan-Position (`PICKUP_SCAN`, `Z: 85.0`) direkt über dem Objekt.
@@ -121,7 +121,7 @@ Sowohl beim Homing als auch bei jeder regulären Positionierung wird bei Signalv
 
 ---
 
-## 🚀 Installation & Inbetriebnahme
+## Installation & Inbetriebnahme
 
 ### 1. Voraussetzungen
 Das Projekt nutzt PlatformIO. Benötigte Abhängigkeiten (siehe `platformio.ini`):
@@ -145,7 +145,7 @@ pio run -e transmitter -t upload
 
 ---
 
-## 🔌 Pinbelegung
+## Pinbelegung
 
 ### 📡 Sender (Farbsensor-Modul)
 <img width="170" height="241" alt="pin_sensor_connection" src="https://github.com/user-attachments/assets/a197ee79-b29b-477e-a35c-ff98eb3c46e3" />
@@ -155,11 +155,12 @@ pio run -e transmitter -t upload
 | **26** (`EV3_RX_PIN`) | Verbunden mit dem TX-Pin des LEGO Mindstorms EV3 Farbsensors |
 | **27** (`EV3_TX_PIN`) | Verbunden mit dem RX-Pin des LEGO Mindstorms EV3 Farbsensors |
 
-### 🤖 Empfänger (Roboterarm-Steuerung)
+### Empfänger (Roboterarm-Steuerung)
 
 | Pin | Funktion |
 |:---:|---|
 | **18** (`S_RXD`) | Empfangsleitung für das Feetech/SCServo Bussystem |
 | **19** (`S_TXD`) | Sendeleitung für das Feetech/SCServo Bussystem |
 
-> **Hinweis:** Da es sich um ein Halbduplex-Eindraht-Bussystem handelt, wird hier typischerweise eine entsprechende Treiberschaltung oder ein Signal-Inverter verwendet.
+> [!NOTE]
+diese README wurde KI generiert
