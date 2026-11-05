@@ -144,5 +144,5 @@ Sowohl beim Homing als auch bei jeder regulären Positionierung wird bei Signalv
 | **19** (`S_TXD`) | Sendeleitung für das Feetech/SCServo Bussystem |
 
 > [!NOTE]
-code von repo https://github.com/Fundacao-Asimo/Ev3ColorSensor
-diese README wurde KI generiert
+> code von repo https://github.com/Fundacao-Asimo/Ev3ColorSensor
+> diese README wurde KI generiert
