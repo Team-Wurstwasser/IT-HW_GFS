@@ -4,9 +4,9 @@ Dieses Projekt implementiert eine drahtlose Farberkennungs- und Sortiersteuerung
 
 ---
 
-## 🛠️ Systemarchitektur
+## Systemarchitektur
 
-Das Projekt ist als PlatformIO-Multi-Environment-Setup aufgebaut und in zwei eigenständige Firmware-Komponenten aufgeteilt, die über `build_src_filter` getrennt kompiliert werden:
+Das Projekt ist als PlatformIO-Multi-Environment-Setup aufgebaut und in zwei eigenständige Firmware-Komponenten aufgeteilt:
 
 ### 1. Sender / Transmitter (`src/transmitter/`)
 * **Hardware:** ESP32 + LEGO Mindstorms EV3 Farbsensor.
@@ -128,7 +128,7 @@ Sowohl beim Homing als auch bei jeder regulären Positionierung wird bei Signalv
 
 ## Pinbelegung
 
-### 📡 Sender (Farbsensor-Modul)
+### Sender (Farbsensor-Modul)
 <img width="170" height="241" alt="pin_sensor_connection" src="https://github.com/user-attachments/assets/a197ee79-b29b-477e-a35c-ff98eb3c46e3" />
 
 | Pin | Funktion |
