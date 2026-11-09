@@ -144,5 +144,8 @@ Sowohl beim Homing als auch bei jeder regulären Positionierung wird bei Signalv
 | **19** (`S_TXD`) | Sendeleitung für das Feetech/SCServo Bussystem |
 
 > [!NOTE]
-> Teile des codes von Repo https://github.com/Fundacao-Asimo/Ev3ColorSensor <br>
-> diese README wurde KI generiert
+> **Herkunft des Codes**
+> * **Sender (`src/transmitter/`):** Die EV3-Sensor-Ansteuerung basiert auf dem Repo [Fundacao-Asimo/Ev3ColorSensor](https://github.com/Fundacao-Asimo/Ev3ColorSensor).
+> * **Empfänger (`src/receiver/`):** Teile von Servo- und Kinematik-Grundlagen stammen vom Waveshare RoArm-M1 und wurden für dieses Projekt angepasst.
+>
+> Diese README wurde mit Hilfe von KI erstellt.
